@@ -379,7 +379,7 @@ function ShiftManager() {
                 </div>
               </div>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                {shifts[dateKey(year, month, editDay)] && !confirmDelete && (
+                {!confirmDelete && (
                   <button onClick={() => setConfirmDelete(true)} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#c0392b", padding: 4 }}><IconTrash /></button>
                 )}
                 <button onClick={() => { setEditDay(null); setConfirmDelete(false); }} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#111", padding: 4 }}><IconClose /></button>
@@ -409,6 +409,23 @@ function ShiftManager() {
                     ))}
                   </div>
                 </div>
+
+                {editData.status === "出勤" && (
+                  <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+                    {[["早番", "09:30", "18:30"], ["遅番", "11:00", "20:00"]].map(([label, start, end]) => {
+                      const active = editData.startTime === start && editData.endTime === end;
+                      return (
+                        <button key={label} onClick={e => { e.stopPropagation(); setEditData(prev => ({ ...prev, startTime: start, endTime: end })); }}
+                          style={{
+                            padding: "4px 10px", background: "none",
+                            border: `1px solid ${active ? "#111" : "#ddd"}`,
+                            cursor: "pointer", fontSize: 9, letterSpacing: 1.5,
+                            color: active ? "#111" : "#bbb", transition: "all 0.15s"
+                          }}>{label}</button>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {editData.status === "出勤" && (
                   <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
