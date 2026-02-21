@@ -84,11 +84,11 @@ const WEEKDAY_JP = ["日", "月", "火", "水", "木", "金", "土"];
 function dateKey(y, m, d) {
   return `${y}-${String(m).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 }
-function calcHours(start, end) {
+function calcHours(start, end, breakMin = 60) {
   if (!start || !end) return null;
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
-  const diff = (eh * 60 + em) - (sh * 60 + sm);
+  const diff = (eh * 60 + em) - (sh * 60 + sm) - breakMin;
   return diff > 0 ? diff / 60 : null;
 }
 function defaultEndTime(start) {
@@ -167,7 +167,7 @@ function ShiftManager() {
       const s = shifts[dateKey(year, month, d)];
       if (!s) continue;
       if (s.status === "休日") off++;
-      else { work++; const h = calcHours(s.startTime, s.endTime); if (h) { totalH += h; hasTime = true; } }
+      else { work++; const h = calcHours(s.startTime, s.endTime, s.breakTime ?? 60); if (h) { totalH += h; hasTime = true; } }
     }
     return { work, off, totalH: hasTime ? totalH : null };
   })();
@@ -175,7 +175,7 @@ function ShiftManager() {
   function openEdit(day) {
     const k = dateKey(year, month, day);
     setEditDay(day);
-    setEditData(shifts[k] || { status: "出勤", startTime: "", endTime: "", memo: "" });
+    setEditData(shifts[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
     setConfirmDelete(false);
   }
   function saveEdit() {
@@ -391,7 +391,7 @@ function ShiftManager() {
                 </div>
 
                 {editData.status === "出勤" && (
-                  <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+                  <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
                     {[["開始", "startTime"], ["終了", "endTime"]].map(([label, key]) => (
                       <div key={key} style={{ flex: 1 }}>
                         <label style={labelSm}>{label}</label>
@@ -413,11 +413,29 @@ function ShiftManager() {
                   </div>
                 )}
 
+                {editData.status === "出勤" && (
+                  <div style={{ marginBottom: 20 }}>
+                    <label style={labelSm}>休憩</label>
+                    <div style={{ display: "flex", border: "1px solid #e0dedd" }}>
+                      {[["なし", 0], ["30分", 30], ["1時間", 60], ["1.5時間", 90]].map(([label, val], i) => (
+                        <button key={val} onClick={() => setEditData(prev => ({ ...prev, breakTime: val }))} style={{
+                          flex: 1, padding: "9px 0",
+                          background: (editData.breakTime ?? 60) === val ? "#111" : "#fff",
+                          border: "none", borderRight: i < 3 ? "1px solid #e0dedd" : "none",
+                          cursor: "pointer", fontSize: 10, letterSpacing: 1,
+                          color: (editData.breakTime ?? 60) === val ? "#fff" : "#aaa",
+                          transition: "all 0.15s"
+                        }}>{label}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {editData.status === "出勤" && editData.startTime && editData.endTime && (() => {
-                  const h = calcHours(editData.startTime, editData.endTime);
+                  const h = calcHours(editData.startTime, editData.endTime, editData.breakTime ?? 60);
                   return h ? (
                     <div style={{ display: "flex", alignItems: "center", marginBottom: 20, padding: "10px 12px", background: "#f5f4f2", borderLeft: "2px solid #111" }}>
-                      <span style={{ fontSize: 9, letterSpacing: 3, color: "#999", textTransform: "uppercase" }}>Duration</span>
+                      <span style={{ fontSize: 9, letterSpacing: 3, color: "#999", textTransform: "uppercase" }}>実働</span>
                       <span style={{ fontSize: 14, fontWeight: 300, marginLeft: "auto" }}>{formatHours(h)}</span>
                     </div>
                   ) : null;
@@ -452,11 +470,12 @@ function ImportModal({ onClose, saveShifts }) {
 
   const prompt = `シフト表のスクショを添付します。「成田」の列を読み取って、Googleカレンダーに追加してください。\n\n追加後、以下のJSON形式でシフトデータも出力してください（コードブロック不要）:\n{"year":2026,"month":3,"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"","memo":""}}}`;
 
-  useEffect(() => {
-    if (tab === "scan") {
-      navigator.clipboard.writeText(prompt).catch(() => {}).finally(() => setCopied(true));
-    }
-  }, [tab]);
+  function copyPrompt() {
+    navigator.clipboard.writeText(prompt).catch(() => {}).finally(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
 
   function applyJson() {
     setJsonError("");
@@ -523,14 +542,19 @@ function ImportModal({ onClose, saveShifts }) {
           <>
             <div style={{
               padding: "14px 16px", marginBottom: 24,
-              background: copied ? "#f5f4f2" : "#fafaf9",
-              borderLeft: `2px solid ${copied ? "#111" : "#ddd"}`,
-              transition: "all 0.3s"
+              background: "#f5f4f2", borderLeft: "2px solid #ddd"
             }}>
-              <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: copied ? "#111" : "#bbb", marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                {copied && <IconCheck />} {copied ? "Prompt Copied!" : "Copying..."}
-              </div>
-              <div style={{ fontSize: 11, color: "#777", lineHeight: 1.7, fontFamily: "monospace" }}>{prompt}</div>
+              <div style={{ fontSize: 11, color: "#777", lineHeight: 1.7, fontFamily: "monospace", marginBottom: 12 }}>{prompt}</div>
+              <button onClick={copyPrompt} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: copied ? "#111" : "none",
+                border: `1px solid ${copied ? "#111" : "#bbb"}`,
+                padding: "6px 14px", cursor: "pointer",
+                fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
+                color: copied ? "#fff" : "#888", transition: "all 0.2s"
+              }}>
+                {copied ? <><IconCheck /> Copied!</> : "Copy Prompt"}
+              </button>
             </div>
 
             {["スクショを撮る", "Claudeのチャット画面へ移動", "画像を添付 → 貼り付けて送信", "返ってきたJSONをコピー → JSONタブに貼る"].map((s, i) => (
@@ -648,7 +672,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
         const k = dateKey(year, month, day);
         const data = shifts[k];
         const isOff = data?.status === "休日";
-        const hours = data && !isOff ? calcHours(data.startTime, data.endTime) : null;
+        const hours = data && !isOff ? calcHours(data.startTime, data.endTime, data.breakTime ?? 60) : null;
         const isSelected = selected?.includes(day);
 
         return (
