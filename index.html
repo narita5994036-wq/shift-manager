@@ -236,6 +236,26 @@ function ShiftManager() {
                   : <span style={{ color: "#ddd" }}>—</span>
                 }
               </div>
+              {/* Next day's shift */}
+              {(() => {
+                const nextDay = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1);
+                const nk = dateKey(nextDay.getFullYear(), nextDay.getMonth() + 1, nextDay.getDate());
+                const ns = shifts[nk];
+                return (
+                  <div style={{ marginTop: 3, fontSize: 11, color: "#aaa", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "#ddd" }}>Next</span>
+                    {ns
+                      ? ns.status === "休日"
+                        ? <span style={{ color: "#ddd", letterSpacing: 1 }}>Off</span>
+                        : <span style={{ color: "#aaa", fontWeight: 300 }}>
+                            {ns.startTime || "—"}{ns.endTime ? ` – ${ns.endTime}` : ""}
+                            {ns.memo ? <span style={{ color: "#ccc", fontSize: 10, marginLeft: 6 }}>{ns.memo}</span> : null}
+                          </span>
+                      : <span style={{ color: "#ddd" }}>—</span>
+                    }
+                  </div>
+                );
+              })()}
             </div>
             <button onClick={() => setShowImport(true)} className="icon-btn" style={{
               display: "flex", alignItems: "center", gap: 6, background: "none",
