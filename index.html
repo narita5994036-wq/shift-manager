@@ -667,12 +667,21 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick }
           const data = shifts[k];
           const isOff = data?.status === "休日";
           const isToday = year === todayY && month === todayM && day === todayD;
+          const isEarly = !isOff && data?.startTime && (() => {
+            const [h, m] = data.startTime.split(":").map(Number);
+            const mins = h * 60 + m;
+            return mins >= 9 * 60 + 30 && mins <= 10 * 60;
+          })();
+          const isLate = !isOff && data?.startTime && (() => {
+            const [h, m] = data.startTime.split(":").map(Number);
+            return h * 60 + m >= 11 * 60;
+          })();
           return (
             <button key={i} onClick={() => onDayClick(day)} className="cal-day" style={{
               border: "none", padding: "8px 4px 10px", cursor: "pointer",
               background: isToday ? "#f0f0ef" : !data ? "transparent" : isOff ? "#f5f4f2" : "#fff",
               display: "flex", flexDirection: "column", alignItems: "center", gap: 3, minHeight: 60,
-              borderTop: isToday ? "2px solid #111" : isOff ? "2px solid #ddd" : data ? "2px solid #111" : "2px solid #eee",
+              borderTop: isToday ? "2px solid #111" : isOff ? "2px solid #ddd" : isEarly ? "2px solid #c9a84c" : isLate ? "2px solid #2d6a4f" : data ? "2px solid #111" : "2px solid #eee",
               outline: isToday ? "none" : "none",
               transition: "background 0.15s",
               position: "relative"
