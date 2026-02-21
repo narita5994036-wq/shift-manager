@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -30,7 +31,9 @@
 <div id="root"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 
 <script type="text/babel">
@@ -172,6 +175,13 @@ function ShiftManager() {
   }
   const prevMonth = () => { if (month === 1) { setYear(y => y - 1); setMonth(12); } else setMonth(m => m - 1); };
   const nextMonth = () => { if (month === 12) { setYear(y => y + 1); setMonth(1); } else setMonth(m => m + 1); };
+  const goToday   = () => { setYear(today.getFullYear()); setMonth(today.getMonth() + 1); };
+
+  const todayY = today.getFullYear();
+  const todayM = today.getMonth() + 1;
+  const todayD = today.getDate();
+  const isCurrentMonth = year === todayY && month === todayM;
+  const todayShift = isCurrentMonth ? shifts[dateKey(todayY, todayM, todayD)] : null;
 
   const labelSm = { fontSize: 9, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 8, display: "block" };
 
@@ -186,6 +196,19 @@ function ShiftManager() {
             <div>
               <div style={{ fontSize: 9, letterSpacing: 4, color: "#999", textTransform: "uppercase", marginBottom: 4 }}>Shift Manager</div>
               <div style={{ fontSize: 22, fontWeight: 300, letterSpacing: 1 }}>成田</div>
+              {/* Today's shift */}
+              <div style={{ marginTop: 6, fontSize: 11, color: "#aaa", display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "#ccc" }}>Today</span>
+                {todayShift
+                  ? todayShift.status === "休日"
+                    ? <span style={{ color: "#ccc", letterSpacing: 1 }}>Off</span>
+                    : <span style={{ color: "#111", fontWeight: 400 }}>
+                        {todayShift.startTime || "—"}{todayShift.endTime ? ` – ${todayShift.endTime}` : ""}
+                        {todayShift.memo ? <span style={{ color: "#bbb", fontSize: 10, marginLeft: 6 }}>{todayShift.memo}</span> : null}
+                      </span>
+                  : <span style={{ color: "#ddd" }}>—</span>
+                }
+              </div>
             </div>
             <button onClick={() => setShowImport(true)} className="icon-btn" style={{
               display: "flex", alignItems: "center", gap: 6, background: "none",
@@ -199,7 +222,15 @@ function ShiftManager() {
           {/* Month nav */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <button onClick={prevMonth} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#111", padding: 4 }}><IconChevronL /></button>
-            <span style={{ fontSize: 13, fontWeight: 400, letterSpacing: 2, textTransform: "uppercase" }}>{year} / {String(month).padStart(2,"0")}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 400, letterSpacing: 2, textTransform: "uppercase" }}>{year} / {String(month).padStart(2,"0")}</span>
+              {!isCurrentMonth && (
+                <button onClick={goToday} style={{
+                  background: "none", border: "1px solid #ddd", padding: "2px 8px", cursor: "pointer",
+                  fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", color: "#aaa"
+                }}>Today</button>
+              )}
+            </div>
             <button onClick={nextMonth} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#111", padding: 4 }}><IconChevronR /></button>
           </div>
 
@@ -374,6 +405,11 @@ function ImportModal({ onClose }) {
 
 // ── Calendar View ────────────────────────────────────────────
 function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick }) {
+  const today = new Date();
+  const todayY = today.getFullYear();
+  const todayM = today.getMonth() + 1;
+  const todayD = today.getDate();
+
   const cells = [];
   for (let i = 0; i < firstDow; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
@@ -393,15 +429,22 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick }
           const k = dateKey(year, month, day);
           const data = shifts[k];
           const isOff = data?.status === "休日";
+          const isToday = year === todayY && month === todayM && day === todayD;
           return (
             <button key={i} onClick={() => onDayClick(day)} className="cal-day" style={{
               border: "none", padding: "8px 4px 10px", cursor: "pointer",
-              background: !data ? "transparent" : isOff ? "#f5f4f2" : "#fff",
+              background: isToday ? "#f0f0ef" : !data ? "transparent" : isOff ? "#f5f4f2" : "#fff",
               display: "flex", flexDirection: "column", alignItems: "center", gap: 3, minHeight: 60,
-              borderTop: isOff ? "2px solid #ddd" : data ? "2px solid #111" : "2px solid #eee",
-              transition: "background 0.15s"
+              borderTop: isToday ? "2px solid #111" : isOff ? "2px solid #ddd" : data ? "2px solid #111" : "2px solid #eee",
+              outline: isToday ? "none" : "none",
+              transition: "background 0.15s",
+              position: "relative"
             }}>
-              <span style={{ fontSize: 13, fontWeight: 300, color: !data ? "#ccc" : isOff ? "#ccc" : dow === 0 ? "#c0392b" : "#111" }}>{day}</span>
+              <span style={{
+                fontSize: 13, fontWeight: isToday ? 600 : 300,
+                color: isToday ? "#111" : !data ? "#ccc" : isOff ? "#ccc" : dow === 0 ? "#c0392b" : "#111"
+              }}>{day}</span>
+              {isToday && <span style={{ position: "absolute", bottom: 4, width: 4, height: 4, background: "#111", borderRadius: "50%" }} />}
               {data && !isOff && <span style={{ fontSize: 10, color: "#888", fontWeight: 300 }}>{data.startTime}</span>}
               {data && !isOff && data.endTime && <span style={{ fontSize: 9, color: "#bbb" }}>{data.endTime}</span>}
               {isOff && <span style={{ fontSize: 8, letterSpacing: 1.5, color: "#ccc", textTransform: "uppercase" }}>Off</span>}
@@ -458,5 +501,6 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick }) {
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(<ShiftManager />);
 </script>
+
 </body>
 </html>
