@@ -461,7 +461,10 @@ function ImportModal({ onClose, saveShifts }) {
   function applyJson() {
     setJsonError("");
     try {
-      const data = JSON.parse(jsonText.trim());
+      const cleaned = jsonText.trim()
+        .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+        .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+      const data = JSON.parse(cleaned);
       if (!data.shifts || typeof data.shifts !== "object") throw new Error("shiftsが見つかりません");
       // storageに保存
       const keys = Object.keys(data.shifts);
