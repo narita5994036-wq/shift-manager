@@ -564,7 +564,7 @@ function ImportModal({ onClose, saveShifts }) {
               padding: "14px 16px", marginBottom: 24,
               background: "#f5f4f2", borderLeft: "2px solid #ddd"
             }}>
-              <div style={{ fontSize: 11, color: "#777", lineHeight: 1.7, fontFamily: "monospace", marginBottom: 12 }}>{prompt}</div>
+              <div style={{ fontSize: 11, color: "#777", lineHeight: 1.7, fontFamily: "monospace", marginBottom: 12, wordBreak: "break-all", whiteSpace: "pre-wrap" }}>{prompt}</div>
               <button onClick={copyPrompt} style={{
                 display: "flex", alignItems: "center", gap: 6,
                 background: copied ? "#111" : "none",
