@@ -210,6 +210,12 @@ function ShiftManager() {
   const isCurrentMonth = year === todayY && month === todayM;
   const todayShift = isCurrentMonth ? shifts[dateKey(todayY, todayM, todayD)] : null;
 
+  const nextDay = new Date(todayY, todayM - 1, todayD + 1);
+  const nextDayY = nextDay.getFullYear();
+  const nextDayM = nextDay.getMonth() + 1;
+  const nextDayD = nextDay.getDate();
+  const nextDayShift = shifts[dateKey(nextDayY, nextDayM, nextDayD)] ?? null;
+
   const labelSm = { fontSize: 9, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 8, display: "block" };
 
   return (
@@ -232,6 +238,19 @@ function ShiftManager() {
                     : <span style={{ color: "#111", fontWeight: 400 }}>
                         {todayShift.startTime || "—"}{todayShift.endTime ? ` – ${todayShift.endTime}` : ""}
                         {todayShift.memo ? <span style={{ color: "#bbb", fontSize: 10, marginLeft: 6 }}>{todayShift.memo}</span> : null}
+                      </span>
+                  : <span style={{ color: "#ddd" }}>—</span>
+                }
+              </div>
+              {/* Next day's shift */}
+              <div style={{ marginTop: 4, fontSize: 11, color: "#aaa", display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "#ccc" }}>Next</span>
+                {nextDayShift
+                  ? nextDayShift.status === "休日"
+                    ? <span style={{ color: "#ccc", letterSpacing: 1 }}>Off</span>
+                    : <span style={{ color: "#111", fontWeight: 400 }}>
+                        {nextDayShift.startTime || "—"}{nextDayShift.endTime ? ` – ${nextDayShift.endTime}` : ""}
+                        {nextDayShift.memo ? <span style={{ color: "#bbb", fontSize: 10, marginLeft: 6 }}>{nextDayShift.memo}</span> : null}
                       </span>
                   : <span style={{ color: "#ddd" }}>—</span>
                 }
