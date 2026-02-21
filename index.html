@@ -91,6 +91,12 @@ function calcHours(start, end) {
   const diff = (eh * 60 + em) - (sh * 60 + sm);
   return diff > 0 ? diff / 60 : null;
 }
+function defaultEndTime(start) {
+  if (!start) return "";
+  const [h, m] = start.split(":").map(Number);
+  const total = h * 60 + m + 9 * 60; // 9時間後
+  return `${String(Math.floor(total / 60) % 24).padStart(2,"0")}:${String(total % 60).padStart(2,"0")}`;
+}
 function formatHours(h) {
   const hours = Math.floor(h);
   const mins = Math.round((h - hours) * 60);
@@ -389,7 +395,18 @@ function ShiftManager() {
                     {[["開始", "startTime"], ["終了", "endTime"]].map(([label, key]) => (
                       <div key={key} style={{ flex: 1 }}>
                         <label style={labelSm}>{label}</label>
-                        <input type="time" value={editData[key]} onChange={e => setEditData({ ...editData, [key]: e.target.value })}
+                        <input type="time" value={editData[key]} onChange={e => {
+                          const val = e.target.value;
+                          if (key === "startTime") {
+                            setEditData(prev => ({
+                              ...prev,
+                              startTime: val,
+                              endTime: prev.endTime || defaultEndTime(val)
+                            }));
+                          } else {
+                            setEditData(prev => ({ ...prev, [key]: val }));
+                          }
+                        }}
                           style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0dedd", fontSize: 15, fontWeight: 300, background: "#fafaf9", outline: "none", height: 44, display: "block" }} />
                       </div>
                     ))}
