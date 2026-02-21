@@ -468,7 +468,7 @@ function ImportModal({ onClose, saveShifts }) {
   const [jsonError, setJsonError] = useState("");
   const [jsonSuccess, setJsonSuccess] = useState(false);
 
-  const prompt = `シフト表のスクショを添付します。「成田」の列を読み取って、Googleカレンダーに追加してください。\n\n追加後、以下のJSON形式でシフトデータも出力してください（コードブロック不要）:\n{"year":2026,"month":3,"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"","memo":""}}}`;
+  const prompt = `シフト表のスクショを添付します。「成田」の列を読み取って、カレンダーに追加してください。\n\n追加後、以下のJSON形式でシフトデータも出力してください（コードブロック不要）:\n{"year":2026,"month":3,"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"18:30","breakTime":60,"memo":""}}}`;
 
   function copyPrompt() {
     navigator.clipboard.writeText(prompt).catch(() => {}).finally(() => {
@@ -565,6 +565,17 @@ function ImportModal({ onClose, saveShifts }) {
               </div>
             ))}
 
+            <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width: "100%", marginTop: 8, marginBottom: 12, padding: "13px 0",
+              background: "#f5f4f2", color: "#111", textDecoration: "none",
+              fontSize: 10, letterSpacing: 3, textTransform: "uppercase",
+              border: "1px solid #e0dedd"
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              Open Claude
+            </a>
+
             <button onClick={onClose} className="primary-btn" style={{
               width: "100%", marginTop: 8, padding: "13px 0", background: "#111", color: "#fff",
               border: "none", cursor: "pointer", fontSize: 10, letterSpacing: 3, textTransform: "uppercase"
@@ -650,7 +661,7 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick }
                 fontSize: 13, fontWeight: isToday ? 600 : 300,
                 color: isToday ? "#111" : !data ? "#ccc" : isOff ? "#ccc" : dow === 0 ? "#c0392b" : "#111"
               }}>{day}</span>
-              {isToday && <span style={{ position: "absolute", bottom: 4, width: 4, height: 4, background: "#111", borderRadius: "50%" }} />}
+              
               {data && !isOff && <span style={{ fontSize: 10, color: "#888", fontWeight: 300 }}>{data.startTime}</span>}
               {data && !isOff && data.endTime && <span style={{ fontSize: 9, color: "#bbb" }}>{data.endTime}</span>}
               {isOff && <span style={{ fontSize: 8, letterSpacing: 1.5, color: "#ccc", textTransform: "uppercase" }}>Off</span>}
