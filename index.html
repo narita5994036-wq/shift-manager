@@ -145,12 +145,23 @@ function ShiftManager() {
     setLoaded(false);
     setSelectMode(false);
     setSelected([]);
-    const raw = storage.get(storageKey);
+    const ym = `${year}-${String(month).padStart(2,"0")}`;
+    const newKey = `shifts:${member}:${ym}`;
+    const oldKey = `shifts:${ym}`;
+    let raw = storage.get(newKey);
+    // 旧キー（成田のみ）からマイグレーション
+    if (!raw && member === "成田") {
+      const oldRaw = storage.get(oldKey);
+      if (oldRaw) {
+        storage.set(newKey, oldRaw);
+        raw = oldRaw;
+      }
+    }
     if (raw) {
       setShifts(JSON.parse(raw));
-    } else if (year === 2026 && month === 3) {
+    } else if (member === "成田" && year === 2026 && month === 3) {
       setShifts(MARCH_2026_DATA);
-      storage.set(storageKey, JSON.stringify(MARCH_2026_DATA));
+      storage.set(newKey, JSON.stringify(MARCH_2026_DATA));
     } else {
       setShifts({});
     }
@@ -526,7 +537,7 @@ function ImportModal({ onClose, saveShifts }) {
   const [jsonError, setJsonError] = useState("");
   const [jsonSuccess, setJsonSuccess] = useState(false);
 
-  const prompt = `シフト表のスクショを添付します。「成田」の列を読み取って、カレンダーに追加してください。\n\n追加後、以下のJSON形式でシフトデータも出力してください（コードブロック不要）:\n{"year":2026,"month":3,"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"18:30","breakTime":60,"memo":""}}}`;
+  const prompt = `シフト表のスクショを添付します。「成田」の列を読み取って、カレンダーに追加してください。\n\n追加後、全員分のシフトデータを以下のJSON形式で出力してください（コードブロック不要）:\n{"members":{"成田":{"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"18:30","breakTime":60,"memo":""}}},"正田":{"shifts":{}},"尾谷":{"shifts":{}},"淵原":{"shifts":{}}}}`;
 
   function copyPrompt() {
     navigator.clipboard.writeText(prompt).catch(() => {}).finally(() => {
@@ -542,23 +553,51 @@ function ImportModal({ onClose, saveShifts }) {
         .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
         .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
       const data = JSON.parse(cleaned);
-      if (!data.shifts || typeof data.shifts !== "object") throw new Error("shiftsが見つかりません");
-      // storageに保存
-      const keys = Object.keys(data.shifts);
-      if (keys.length === 0) throw new Error("シフトデータが空です");
-      // 年月ごとにグループ化
-      const groups = {};
-      keys.forEach(k => {
-        const [y, m] = k.split("-");
-        const gk = `${y}-${m}`;
-        if (!groups[gk]) groups[gk] = {};
-        groups[gk][k] = data.shifts[k];
-      });
-      Object.entries(groups).forEach(([ym, shifts]) => {
-        const existing = storage.get(`shifts:${ym}`);
-        const merged = existing ? { ...JSON.parse(existing), ...shifts } : shifts;
-        storage.set(`shifts:${ym}`, JSON.stringify(merged));
-      });
+
+      // 複数メンバー形式: { members: { 成田: { shifts: {...} }, ... } }
+      // 単一メンバー形式: { year, month, shifts: {...} }
+      if (data.members) {
+        let count = 0;
+        Object.entries(data.members).forEach(([name, memberData]) => {
+          if (!memberData.shifts) return;
+          const keys = Object.keys(memberData.shifts);
+          const groups = {};
+          keys.forEach(k => {
+            const [y, m] = k.split("-");
+            const gk = `${y}-${m}`;
+            if (!groups[gk]) groups[gk] = {};
+            groups[gk][k] = memberData.shifts[k];
+          });
+          Object.entries(groups).forEach(([ym, shifts]) => {
+            const storeKey = `shifts:${name}:${ym}`;
+            const existing = (() => { try { return storage.get(storeKey); } catch(e) { return null; } })();
+            const merged = existing ? { ...JSON.parse(existing), ...shifts } : shifts;
+            storage.set(storeKey, JSON.stringify(merged));
+            count++;
+          });
+        });
+        if (count === 0) throw new Error("有効なデータが見つかりません");
+      } else {
+        // 従来の単一形式
+        if (!data.shifts || typeof data.shifts !== "object") throw new Error("shiftsが見つかりません");
+        const keys = Object.keys(data.shifts);
+        if (keys.length === 0) throw new Error("シフトデータが空です");
+        const groups = {};
+        keys.forEach(k => {
+          const [y, m] = k.split("-");
+          const gk = `${y}-${m}`;
+          if (!groups[gk]) groups[gk] = {};
+          groups[gk][k] = data.shifts[k];
+        });
+        const targetMember = data.member || "成田";
+        Object.entries(groups).forEach(([ym, shifts]) => {
+          const storeKey = `shifts:${targetMember}:${ym}`;
+          const existing = (() => { try { return storage.get(storeKey); } catch(e) { return null; } })();
+          const merged = existing ? { ...JSON.parse(existing), ...shifts } : shifts;
+          storage.set(storeKey, JSON.stringify(merged));
+        });
+      }
+
       setJsonSuccess(true);
       setTimeout(() => { onClose(); window.location.reload(); }, 1200);
     } catch(e) {
