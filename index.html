@@ -143,27 +143,24 @@ function ShiftManager() {
 
   useEffect(() => {
     setLoaded(false);
+    setShifts({});
     setSelectMode(false);
     setSelected([]);
     const ym = `${year}-${String(month).padStart(2,"0")}`;
     const newKey = `shifts:${member}:${ym}`;
     const oldKey = `shifts:${ym}`;
-    let raw = storage.get(newKey);
-    // 旧キー（成田のみ）からマイグレーション
+    let raw = null;
+    try { raw = storage.get(newKey); } catch(e) {}
     if (!raw && member === "成田") {
-      const oldRaw = storage.get(oldKey);
-      if (oldRaw) {
-        storage.set(newKey, oldRaw);
-        raw = oldRaw;
-      }
+      let oldRaw = null;
+      try { oldRaw = storage.get(oldKey); } catch(e) {}
+      if (oldRaw) { storage.set(newKey, oldRaw); raw = oldRaw; }
     }
     if (raw) {
       setShifts(JSON.parse(raw));
     } else if (member === "成田" && year === 2026 && month === 3) {
       setShifts(MARCH_2026_DATA);
       storage.set(newKey, JSON.stringify(MARCH_2026_DATA));
-    } else {
-      setShifts({});
     }
     setLoaded(true);
   }, [year, month, member]);
@@ -550,10 +547,11 @@ function ImportModal({ onClose, saveShifts }) {
     setJsonError("");
     try {
       const cleaned = jsonText.trim()
-        .replace(/[\u200B-\u200D\uFEFF\u00A0\u2028\u2029]/g, '') // ゼロ幅・不可視文字
+        .replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '') // コードブロック除去
+        .replace(/[\u200B-\u200D\uFEFF\u00A0\u2028\u2029]/g, '')
         .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
         .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
-        .replace(/[\u2010-\u2015\u2212]/g, '-'); // 特殊ハイフン
+        .replace(/[\u2010-\u2015\u2212]/g, '-');
       const data = JSON.parse(cleaned);
 
       // 複数メンバー形式: { members: { 成田: { shifts: {...} }, ... } }
