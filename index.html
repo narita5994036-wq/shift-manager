@@ -813,7 +813,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
         // 他メンバーで出勤している人
         const others = Object.entries(allShifts)
           .filter(([, ms]) => ms[k]?.status === "出勤")
-          .map(([name, ms]) => ({ name: name.slice(0, 1), startTime: ms[k].startTime }));
+          .map(([name, ms]) => ({ name, startTime: ms[k].startTime }));
 
         return (
           <button key={day} onClick={() => selectMode ? onToggle(day) : onDayClick(day)} className="list-row" style={{
