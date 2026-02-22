@@ -118,6 +118,8 @@ const IconTrash    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill=
 const IconArrow    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
 const IconCheck    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 
+const MEMBERS = ["成田", "正田", "尾谷", "淵原"];
+
 // ── Main App ─────────────────────────────────────────────────
 function ShiftManager() {
   const today = new Date();
@@ -133,9 +135,11 @@ function ShiftManager() {
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState([]);
   const [confirmMultiDelete, setConfirmMultiDelete] = useState(false);
-  const [slideDir, setSlideDir] = useState(null); // 'left' | 'right' | null
+  const [slideDir, setSlideDir] = useState(null);
+  const [member, setMember]       = useState("成田");
+  const [showMemberMenu, setShowMemberMenu] = useState(false);
 
-  const storageKey = `shifts:${year}-${String(month).padStart(2,"0")}`;
+  const storageKey = `shifts:${member}:${year}-${String(month).padStart(2,"0")}`;
 
   useEffect(() => {
     setLoaded(false);
@@ -151,7 +155,7 @@ function ShiftManager() {
       setShifts({});
     }
     setLoaded(true);
-  }, [year, month]);
+  }, [year, month, member]);
 
   const saveShifts = useCallback((s) => {
     setShifts(s);
@@ -219,10 +223,27 @@ function ShiftManager() {
         <div style={{ padding: "16px 20px 0" }}>
 
           {/* Title row */}
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20, position: "relative" }}>
             <div>
               <div style={{ fontSize: 9, letterSpacing: 4, color: "#999", textTransform: "uppercase", marginBottom: 4 }}>Shift Manager</div>
-              <div style={{ fontSize: 22, fontWeight: 300, letterSpacing: 1 }}>成田</div>
+              <button onClick={() => setShowMemberMenu(v => !v)} style={{
+                background: "none", border: "none", cursor: "pointer", padding: 0,
+                display: "flex", alignItems: "center", gap: 6
+              }}>
+                <span style={{ fontSize: 22, fontWeight: 300, letterSpacing: 1, color: "#111" }}>{member}</span>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+              {showMemberMenu && (
+                <div style={{ position: "absolute", top: 56, left: 20, background: "#fff", border: "1px solid #e0dedd", zIndex: 50, minWidth: 100 }}>
+                  {MEMBERS.map(m => (
+                    <button key={m} onClick={() => { setMember(m); setShowMemberMenu(false); }} style={{
+                      display: "block", width: "100%", padding: "10px 16px", background: m === member ? "#f5f4f2" : "#fff",
+                      border: "none", cursor: "pointer", textAlign: "left",
+                      fontSize: 13, fontWeight: m === member ? 500 : 300, color: "#111", letterSpacing: 0.5
+                    }}>{m}</button>
+                  ))}
+                </div>
+              )}
               {/* Today's shift */}
               <div style={{ marginTop: 6, fontSize: 11, color: "#aaa", display: "flex", alignItems: "center", gap: 6 }}>
                 <span style={{ fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "#ccc" }}>Today</span>
