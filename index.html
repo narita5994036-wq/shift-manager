@@ -138,6 +138,7 @@ function ShiftManager() {
   const [slideDir, setSlideDir] = useState(null);
   const [member, setMember]       = useState("成田");
   const [showMemberMenu, setShowMemberMenu] = useState(false);
+  const [allShifts, setAllShifts] = useState({});
 
   const storageKey = `shifts:${member}:${year}-${String(month).padStart(2,"0")}`;
 
@@ -163,6 +164,17 @@ function ShiftManager() {
       storage.set(newKey, JSON.stringify(MARCH_2026_DATA));
     }
     setLoaded(true);
+    // 全メンバーのシフトを読み込む
+    const ym2 = `${year}-${String(month).padStart(2,"0")}`;
+    const all = {};
+    MEMBERS.forEach(m => {
+      if (m === member) return;
+      try {
+        const r = storage.get(`shifts:${m}:${ym2}`);
+        if (r) all[m] = JSON.parse(r);
+      } catch(e) {}
+    });
+    setAllShifts(all);
   }, [year, month, member]);
 
   const saveShifts = useCallback((s) => {
@@ -361,7 +373,7 @@ function ShiftManager() {
         {!loaded
           ? <div style={{ textAlign: "center", padding: 60, fontSize: 11, letterSpacing: 2, color: "#bbb", textTransform: "uppercase" }}>Loading</div>
           : view === "calendar"
-            ? <CalendarView year={year} month={month} daysInMonth={daysInMonth} firstDow={firstDow} shifts={shifts} onDayClick={openEdit} />
+            ? <CalendarView year={year} month={month} daysInMonth={daysInMonth} firstDow={firstDow} shifts={shifts} onDayClick={openEdit} allShifts={allShifts} />
             : <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} />
         }
       </div>
@@ -718,7 +730,7 @@ function ImportModal({ onClose, saveShifts }) {
 }
 
 // ── Calendar View ────────────────────────────────────────────
-function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick }) {
+function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick, allShifts = {} }) {
   const today = new Date();
   const todayY = today.getFullYear();
   const todayM = today.getMonth() + 1;
@@ -753,25 +765,32 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick }
             const [h, m] = data.startTime.split(":").map(Number);
             return h * 60 + m >= 11 * 60;
           })();
+          // 同じ日に出勤している他メンバー
+          const sameDay = Object.entries(allShifts)
+            .filter(([, ms]) => ms[k]?.status === "出勤")
+            .map(([name]) => name.slice(0, 1)); // 苗字1文字
           return (
             <button key={i} onClick={() => onDayClick(day)} className="cal-day" style={{
-              border: "none", padding: "8px 4px 10px", cursor: "pointer",
+              border: "none", padding: "8px 4px 8px", cursor: "pointer",
               background: isToday ? "#f0f0ef" : !data ? "transparent" : isOff ? "#f5f4f2" : "#fff",
               display: "flex", flexDirection: "column", alignItems: "center", gap: 3, minHeight: 60,
               borderTop: isToday ? "2px solid #111" : isOff ? "2px solid #ddd" : isEarly ? "2px solid #c9a84c" : isLate ? "2px solid #2d6a4f" : data ? "2px solid #111" : "2px solid #eee",
-              outline: isToday ? "none" : "none",
-              transition: "background 0.15s",
-              position: "relative"
+              outline: "none", transition: "background 0.15s", position: "relative"
             }}>
               <span style={{
                 fontSize: 13, fontWeight: isToday ? 600 : 300,
                 color: isToday ? "#111" : !data ? "#ccc" : isOff ? "#ccc" : dow === 0 ? "#c0392b" : "#111"
               }}>{day}</span>
-              
               {data && !isOff && <span style={{ fontSize: 10, color: "#888", fontWeight: 300 }}>{data.startTime}</span>}
-              {data && !isOff && data.endTime && <span style={{ fontSize: 9, color: "#bbb" }}>{data.endTime}</span>}
               {isOff && <span style={{ fontSize: 8, letterSpacing: 1.5, color: "#ccc", textTransform: "uppercase" }}>Off</span>}
               {data?.memo && !isOff && <span style={{ width: 3, height: 3, background: "#111", borderRadius: "50%" }} />}
+              {!isOff && sameDay.length > 0 && (
+                <div style={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>
+                  {sameDay.map(n => (
+                    <span key={n} style={{ fontSize: 7, color: "#aaa", letterSpacing: 0.5 }}>{n}</span>
+                  ))}
+                </div>
+              )}
             </button>
           );
         })}
