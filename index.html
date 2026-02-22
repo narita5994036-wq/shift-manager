@@ -374,7 +374,7 @@ function ShiftManager() {
           ? <div style={{ textAlign: "center", padding: 60, fontSize: 11, letterSpacing: 2, color: "#bbb", textTransform: "uppercase" }}>Loading</div>
           : view === "calendar"
             ? <CalendarView year={year} month={month} daysInMonth={daysInMonth} firstDow={firstDow} shifts={shifts} onDayClick={openEdit} allShifts={allShifts} />
-            : <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} />
+            : <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} allShifts={allShifts} />
         }
       </div>
 
@@ -800,7 +800,7 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick, 
 }
 
 // ── List View ────────────────────────────────────────────────
-function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, selected, onToggle }) {
+function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, selected, onToggle, allShifts = {} }) {
   return (
     <div style={{ background: "#fff" }}>
       {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
@@ -810,6 +810,10 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
         const isOff = data?.status === "休日";
         const hours = data && !isOff ? calcHours(data.startTime, data.endTime, data.breakTime ?? 60) : null;
         const isSelected = selected?.includes(day);
+        // 他メンバーで出勤している人
+        const others = Object.entries(allShifts)
+          .filter(([, ms]) => ms[k]?.status === "出勤")
+          .map(([name, ms]) => ({ name: name.slice(0, 1), startTime: ms[k].startTime }));
 
         return (
           <button key={day} onClick={() => selectMode ? onToggle(day) : onDayClick(day)} className="list-row" style={{
@@ -843,6 +847,15 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                       {data.memo && <div style={{ fontSize: 10, color: "#bbb", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{data.memo}</div>}
                     </div>
               }
+              {!isOff && others.length > 0 && (
+                <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+                  {others.map(({ name, startTime }) => (
+                    <span key={name} style={{ fontSize: 9, color: "#bbb", letterSpacing: 0.5 }}>
+                      {name} {startTime}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
             {!selectMode && <span style={{ color: "#ddd" }}><IconArrow /></span>}
           </button>
