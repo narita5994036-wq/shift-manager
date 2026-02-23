@@ -44,6 +44,112 @@
 const { useState, useEffect, useCallback, useRef } = React;
 
 // ── Initial Data ─────────────────────────────────────────────
+// ── 正田 3月シフト（スクリーンショットより）───────────────────
+const MARCH_2026_MASADA = {
+  "2026-03-01": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-02": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-03": { status: "出勤", startTime: "10:00", endTime: "19:00", breakTime: 60, memo: "" },
+  "2026-03-04": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-05": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-06": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-07": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-08": { status: "出勤", startTime: "11:30", endTime: "20:30", breakTime: 60, memo: "" },
+  "2026-03-09": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-10": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-11": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-12": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-13": { status: "出勤", startTime: "10:30", endTime: "19:30", breakTime: 60, memo: "" },
+  "2026-03-14": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-15": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-16": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-17": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-18": { status: "出勤", startTime: "10:30", endTime: "19:30", breakTime: 60, memo: "" },
+  "2026-03-19": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-20": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-21": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-22": { status: "出勤", startTime: "11:30", endTime: "20:30", breakTime: 60, memo: "" },
+  "2026-03-23": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-24": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-25": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-26": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-27": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-28": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-29": { status: "出勤", startTime: "10:30", endTime: "19:30", breakTime: 60, memo: "" },
+  "2026-03-30": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-31": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+};
+
+// ── 尾谷 3月シフト（スクリーンショットより）───────────────────
+const MARCH_2026_OTANI = {
+  "2026-03-01": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-02": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-03": { status: "出勤", startTime: "10:00", endTime: "19:00", breakTime: 60, memo: "" },
+  "2026-03-04": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-05": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-06": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-07": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-08": { status: "出勤", startTime: "10:30", endTime: "19:30", breakTime: 60, memo: "" },
+  "2026-03-09": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-10": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-11": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-12": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-13": { status: "出勤", startTime: "11:30", endTime: "20:30", breakTime: 60, memo: "" },
+  "2026-03-14": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-15": { status: "出勤", startTime: "10:30", endTime: "19:30", breakTime: 60, memo: "" },
+  "2026-03-16": { status: "出勤", startTime: "10:30", endTime: "19:30", breakTime: 60, memo: "" },
+  "2026-03-17": { status: "出勤", startTime: "10:30", endTime: "19:30", breakTime: 60, memo: "" },
+  "2026-03-18": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-19": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-20": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-21": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-22": { status: "出勤", startTime: "10:30", endTime: "19:30", breakTime: 60, memo: "" },
+  "2026-03-23": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-24": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-25": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-26": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-27": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-28": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-29": { status: "出勤", startTime: "11:30", endTime: "20:30", breakTime: 60, memo: "" },
+  "2026-03-30": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+  "2026-03-31": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
+};
+
+// ── 淵原 3月シフト（スクリーンショットより・7勤）──────────────
+const MARCH_2026_FUCHIHARA = {
+  "2026-03-01": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-02": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-03": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-04": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-05": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-06": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-07": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-08": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-09": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-10": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-11": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-12": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-13": { status: "出勤", startTime: "09:30", endTime: "18:30", breakTime: 60, memo: "" },
+  "2026-03-14": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "選番研修（見学）" },
+  "2026-03-15": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-16": { status: "出勤", startTime: "11:30", endTime: "20:30", breakTime: 60, memo: "" },
+  "2026-03-17": { status: "出勤", startTime: "11:30", endTime: "20:30", breakTime: 60, memo: "" },
+  "2026-03-18": { status: "出勤", startTime: "11:30", endTime: "20:30", breakTime: 60, memo: "" },
+  "2026-03-19": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-20": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-21": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-22": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-23": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-24": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-25": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-26": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-27": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-28": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-29": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-30": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+  "2026-03-31": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
+};
+
+// ── 成田 3月シフト ─────────────────────────────────────────────
 const MARCH_2026_DATA = {
   "2026-03-01": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
   "2026-03-02": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
@@ -103,6 +209,50 @@ function formatHours(h) {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
 }
 
+// ── ICS Export ───────────────────────────────────────────────
+function generateICS(shifts, memberName, year, month) {
+  const pad = n => String(n).padStart(2, "0");
+  // JST→UTC: subtract 9 hours
+  function toUTC(dateStr, timeStr) {
+    const [y, m, d] = dateStr.split("-").map(Number);
+    const [h, min] = timeStr.split(":").map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d, h - 9, min, 0));
+    return `${dt.getUTCFullYear()}${pad(dt.getUTCMonth()+1)}${pad(dt.getUTCDate())}T${pad(dt.getUTCHours())}${pad(dt.getUTCMinutes())}00Z`;
+  }
+  const lines = [
+    "BEGIN:VCALENDAR", "VERSION:2.0",
+    "PRODID:-//ShiftManager//JP", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+  ];
+  Object.entries(shifts).sort().forEach(([dateStr, shift]) => {
+    if (!shift || shift.status === "休日" || !shift.startTime) return;
+    const dtStart = toUTC(dateStr, shift.startTime);
+    const endT = shift.endTime || shift.startTime;
+    const dtEnd = toUTC(dateStr, endT);
+    const summary = `${memberName} 出勤 ${shift.startTime}${shift.endTime ? "–" + shift.endTime : ""}`;
+    lines.push("BEGIN:VEVENT");
+    lines.push(`DTSTART:${dtStart}`);
+    lines.push(`DTEND:${dtEnd}`);
+    lines.push(`SUMMARY:${summary}`);
+    if (shift.memo) lines.push(`DESCRIPTION:${shift.memo.replace(/\n/g, "\\n")}`);
+    lines.push(`UID:${memberName}-${dateStr}@shift-manager`);
+    lines.push("END:VEVENT");
+  });
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n");
+}
+function downloadICS(shifts, memberName, year, month) {
+  const content = generateICS(shifts, memberName, year, month);
+  const blob = new Blob([content], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `shift-${memberName}-${year}-${String(month).padStart(2,"0")}.ics`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 // ── Storage (localStorage) ────────────────────────────────────
 const storage = {
   get: (key) => { try { return localStorage.getItem(key); } catch { return null; } },
@@ -159,9 +309,18 @@ function ShiftManager() {
     }
     if (raw) {
       setShifts(JSON.parse(raw));
-    } else if (member === "成田" && year === 2026 && month === 3) {
-      setShifts(MARCH_2026_DATA);
-      storage.set(newKey, JSON.stringify(MARCH_2026_DATA));
+    } else if (year === 2026 && month === 3) {
+      const initMap = {
+        "成田": MARCH_2026_DATA,
+        "正田": MARCH_2026_MASADA,
+        "尾谷": MARCH_2026_OTANI,
+        "淵原": MARCH_2026_FUCHIHARA,
+      };
+      const init = initMap[member];
+      if (init) {
+        setShifts(init);
+        storage.set(newKey, JSON.stringify(init));
+      }
     }
     setLoaded(true);
     // 全メンバーのシフトを読み込む
@@ -298,13 +457,24 @@ function ShiftManager() {
                 );
               })()}
             </div>
-            <button onClick={() => setShowImport(true)} className="icon-btn" style={{
-              display: "flex", alignItems: "center", gap: 6, background: "none",
-              border: "1px solid #111", padding: "6px 12px", cursor: "pointer",
-              fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", color: "#111", marginTop: 4
-            }}>
-              <IconCamera /> Scan
-            </button>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+              <button onClick={() => setShowImport(true)} className="icon-btn" style={{
+                display: "flex", alignItems: "center", gap: 6, background: "none",
+                border: "1px solid #111", padding: "6px 12px", cursor: "pointer",
+                fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", color: "#111"
+              }}>
+                <IconCamera /> Scan
+              </button>
+              {member === "成田" && Object.values(shifts).some(s => s?.status === "出勤") && (
+                <button onClick={() => downloadICS(shifts, member, year, month)} className="icon-btn" style={{
+                  display: "flex", alignItems: "center", gap: 6, background: "none",
+                  border: "1px solid #888", padding: "6px 12px", cursor: "pointer",
+                  fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", color: "#888"
+                }}>
+                  iCal
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Month nav */}
@@ -546,7 +716,7 @@ function ImportModal({ onClose, saveShifts }) {
   const [jsonError, setJsonError] = useState("");
   const [jsonSuccess, setJsonSuccess] = useState(false);
 
-  const prompt = `シフト表のスクショを添付します。「成田」の列を読み取って、カレンダーに追加してください。\n\n追加後、全員分のシフトデータを以下のJSON形式で出力してください（コードブロック不要）:\n{"members":{"成田":{"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"18:30","breakTime":60,"memo":""}}},"正田":{"shifts":{}},"尾谷":{"shifts":{}},"淵原":{"shifts":{}}}}`;
+  const prompt = `シフト表のスクショを添付します。全員（成田・正田・尾谷・淵原）の列を読み取って、カレンダーに追加してください。\n成田の予定のみiOSカレンダーアプリへ書き込みます。\n\n追加後、全員分のシフトデータを以下のJSON形式で出力してください（コードブロック不要）:\n{"members":{"成田":{"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"18:30","breakTime":60,"memo":""}}},"正田":{"shifts":{}},"尾谷":{"shifts":{}},"淵原":{"shifts":{}}}}`;
 
   function copyPrompt() {
     navigator.clipboard.writeText(prompt).catch(() => {}).finally(() => {
