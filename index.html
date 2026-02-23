@@ -718,10 +718,21 @@ function ImportModal({ onClose, saveShifts }) {
 
   const prompt = `シフト表のスクショを添付します。全員（成田・正田・尾谷・淵原）の列を読み取り、index.htmlのシフトデータを更新してGitHubへpushしてください。`;
 
+  const promptJson = `シフト表のスクショを添付します。全員（成田・正田・尾谷・淵原）の列を読み取って、全員分のシフトデータを以下のJSON形式で出力してください（コードブロック不要）:\n{"members":{"成田":{"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"18:30","breakTime":60,"memo":""}}},"正田":{"shifts":{}},"尾谷":{"shifts":{}},"淵原":{"shifts":{}}}}`;
+
+  const [copiedJson, setCopiedJson] = useState(false);
+
   function copyPrompt() {
     navigator.clipboard.writeText(prompt).catch(() => {}).finally(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  function copyPromptJson() {
+    navigator.clipboard.writeText(promptJson).catch(() => {}).finally(() => {
+      setCopiedJson(true);
+      setTimeout(() => setCopiedJson(false), 2000);
     });
   }
 
@@ -865,7 +876,33 @@ function ImportModal({ onClose, saveShifts }) {
         {/* JSON tab */}
         {tab === "json" && (
           <>
-            <div style={{ fontSize: 12, color: "#aaa", marginBottom: 16, lineHeight: 1.7 }}>
+            <div style={{
+              padding: "14px 16px", marginBottom: 16,
+              background: "#f5f4f2", borderLeft: "2px solid #ddd"
+            }}>
+              <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#bbb", marginBottom: 8 }}>Manual Prompt</div>
+              <div style={{ fontSize: 11, color: "#777", lineHeight: 1.7, fontFamily: "monospace", marginBottom: 12, wordBreak: "break-all", whiteSpace: "pre-wrap" }}>{promptJson}</div>
+              <button onClick={copyPromptJson} style={{
+                display: "flex", alignItems: "center", gap: 6,
+                background: copiedJson ? "#111" : "none",
+                border: `1px solid ${copiedJson ? "#111" : "#bbb"}`,
+                padding: "6px 14px", cursor: "pointer",
+                fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
+                color: copiedJson ? "#fff" : "#888", transition: "all 0.2s"
+              }}>
+                {copiedJson ? <><IconCheck /> Copied!</> : "Copy Prompt"}
+              </button>
+            </div>
+
+            {["スクショを撮る", "Claudeのチャット画面へ移動", "画像を添付 → プロンプトを貼り付けて送信", "返ってきたJSONをコピー → 下に貼って Apply"].map((s, i) => (
+              <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
+                <div style={{ fontSize: 10, letterSpacing: 1, color: "#bbb", minWidth: 20 }}>0{i+1}</div>
+                <div style={{ flex: 1, height: 1, background: "#e0dedd", marginTop: 8, maxWidth: 16 }} />
+                <div style={{ flex: 1, fontSize: 13, fontWeight: 300, color: i === 3 ? "#111" : "#444", lineHeight: 1.6 }}>{s}</div>
+              </div>
+            ))}
+
+            <div style={{ fontSize: 12, color: "#aaa", marginBottom: 12, marginTop: 4, lineHeight: 1.7 }}>
               ClaudeのチャットからコピーしたJSONを貼り付けてくださいな。
             </div>
             <textarea
