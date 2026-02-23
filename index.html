@@ -716,7 +716,7 @@ function ImportModal({ onClose, saveShifts }) {
   const [jsonError, setJsonError] = useState("");
   const [jsonSuccess, setJsonSuccess] = useState(false);
 
-  const prompt = `シフト表のスクショを添付します。全員（成田・正田・尾谷・淵原）の列を読み取って、カレンダーに追加してください。\n成田の予定のみiOSカレンダーアプリへ書き込みます。\n\n追加後、全員分のシフトデータを以下のJSON形式で出力してください（コードブロック不要）:\n{"members":{"成田":{"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"18:30","breakTime":60,"memo":""}}},"正田":{"shifts":{}},"尾谷":{"shifts":{}},"淵原":{"shifts":{}}}}`;
+  const prompt = `シフト表のスクショを添付します。全員（成田・正田・尾谷・淵原）の列を読み取り、index.htmlのシフトデータを更新してGitHubへpushしてください。`;
 
   function copyPrompt() {
     navigator.clipboard.writeText(prompt).catch(() => {}).finally(() => {
@@ -836,7 +836,7 @@ function ImportModal({ onClose, saveShifts }) {
               </button>
             </div>
 
-            {["スクショを撮る", "Claudeのチャット画面へ移動", "画像を添付 → 貼り付けて送信", "返ってきたJSONをコピー → JSONタブに貼る"].map((s, i) => (
+            {["スクショを撮る", "Open Claude をタップ", "画像を添付して送信", "自動でGitHubへ反映される"].map((s, i) => (
               <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
                 <div style={{ fontSize: 10, letterSpacing: 1, color: "#bbb", minWidth: 20 }}>0{i+1}</div>
                 <div style={{ flex: 1, height: 1, background: "#e0dedd", marginTop: 8, maxWidth: 16 }} />
@@ -844,7 +844,7 @@ function ImportModal({ onClose, saveShifts }) {
               </div>
             ))}
 
-            <a href="https://claude.ai/project/019c7f34-64a4-70f1-be26-c2fa56890698" target="_blank" rel="noopener noreferrer" style={{
+            <a href="https://claude.ai/code/session_01FCPrwRvZGSGRp25Ra8KmBM" target="_blank" rel="noopener noreferrer" style={{
               display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
               width: "100%", marginTop: 8, marginBottom: 12, padding: "13px 0",
               background: "#f5f4f2", color: "#111", textDecoration: "none",
