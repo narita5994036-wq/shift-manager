@@ -288,18 +288,18 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
       const raw = storage.get(storageKey);
       if (raw) {
         const d = JSON.parse(raw);
-        // migrate old numeric format
+        if (typeof d.visitors  === "number") d.visitors  = [];
         if (typeof d.prospects === "number") d.prospects = [];
         if (typeof d.repairs   === "number") d.repairs   = [];
         return d;
       }
     } catch(e) {}
-    return { visitors: 0, prospects: [], repairs: [], purchases: [] };
+    return { visitors: [], prospects: [], repairs: [], purchases: [] };
   };
 
-  const [data, setData] = useState(loadData);
+  const [data, setData]           = useState(loadData);
   const [flashVisitor, setFlashVisitor] = useState(false);
-  const [staffPicker, setStaffPicker] = useState(null); // null | "prospects" | "repairs" | "purchases"
+  const [staffPicker, setStaffPicker]   = useState(null); // null | "prospects" | "repairs" | "purchases"
   const [confirmReset, setConfirmReset] = useState(false);
 
   function persist(next) {
@@ -307,17 +307,22 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
     try { storage.set(storageKey, JSON.stringify(next)); } catch(e) {}
   }
 
+  function nowTime() {
+    const n = new Date();
+    return `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`;
+  }
+
   function incVisitor() {
-    persist({ ...data, visitors: data.visitors + 1 });
+    persist({ ...data, visitors: [...data.visitors, { time: nowTime() }] });
     setFlashVisitor(true);
     setTimeout(() => setFlashVisitor(false), 120);
   }
-  function undoVisitor() { if (data.visitors > 0) persist({ ...data, visitors: data.visitors - 1 }); }
+  function removeVisitor(i) {
+    persist({ ...data, visitors: data.visitors.filter((_, idx) => idx !== i) });
+  }
 
   function addEntry(category, staff) {
-    const now = new Date();
-    const time = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-    persist({ ...data, [category]: [...data[category], { staff, time }] });
+    persist({ ...data, [category]: [...data[category], { staff, time: nowTime() }] });
     setStaffPicker(null);
   }
   function removeEntry(category, i) {
@@ -332,15 +337,16 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
   }
 
   function buildMemoLine() {
-    const pCount  = data.purchases.length;
+    const vCount  = data.visitors.length;
     const prCount = data.prospects.length;
     const rCount  = data.repairs.length;
-    const total   = data.visitors + prCount + rCount;
+    const pCount  = data.purchases.length;
+    const total   = vCount + prCount + rCount;
     const parts = [];
-    if (total    > 0) parts.push(`来店${total}`);
-    if (prCount  > 0) { const s = staffSummary(data.prospects); parts.push(`見込${prCount}${s ? `(${s})` : ""}`); }
-    if (rCount   > 0) { const s = staffSummary(data.repairs);   parts.push(`修理${rCount}${s ? `(${s})` : ""}`); }
-    if (pCount   > 0) { const s = staffSummary(data.purchases); parts.push(`購入${pCount}${s ? `(${s})` : ""}`); }
+    if (total   > 0) parts.push(`来店${total}`);
+    if (prCount > 0) { const s = staffSummary(data.prospects); parts.push(`見込${prCount}${s ? `(${s})` : ""}`); }
+    if (rCount  > 0) { const s = staffSummary(data.repairs);   parts.push(`修理${rCount}${s ? `(${s})` : ""}`); }
+    if (pCount  > 0) { const s = staffSummary(data.purchases); parts.push(`購入${pCount}${s ? `(${s})` : ""}`); }
     return parts.join(" / ");
   }
 
@@ -353,11 +359,11 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
         saveShifts({ ...shifts, [todayStr]: { ...existing, memo: prev ? `${prev}\n${memo}` : memo } });
       }
     }
-    persist({ visitors: 0, prospects: [], repairs: [], purchases: [] });
+    persist({ visitors: [], prospects: [], repairs: [], purchases: [] });
     setConfirmReset(false);
   }
 
-  const totalVisitors = data.visitors + data.prospects.length + data.repairs.length;
+  const totalVisitors = data.visitors.length + data.prospects.length + data.repairs.length;
 
   function EntryList({ category, label }) {
     const entries = data[category];
@@ -398,38 +404,56 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
 
   return (
     <div style={{ padding: "24px 16px 60px" }}>
-      <div style={{ fontSize: 10, letterSpacing: 3, color: "#bbb", textTransform: "uppercase", marginBottom: 24, textAlign: "center" }}>{todayLabel}</div>
+      <div style={{ fontSize: 10, letterSpacing: 3, color: "#bbb", textTransform: "uppercase", marginBottom: 16, textAlign: "center" }}>{todayLabel}</div>
 
-      {/* ── 来店合計 (big) ──────────────────────────── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 20, padding: "20px 20px", background: "#fff", border: "1px solid #e0dedd" }}>
+      {/* ── TOTAL 表示 ──────────────────────────────── */}
+      <div style={{ textAlign: "center", marginBottom: 16 }}>
+        <div style={{ fontSize: 72, fontWeight: 200, letterSpacing: -3, lineHeight: 1, color: flashVisitor ? "#555" : "#111", transition: "color 0.1s" }}>{totalVisitors}</div>
+        <div style={{ fontSize: 9, letterSpacing: 3, color: "#bbb", marginTop: 4 }}>TOTAL VISITORS</div>
+        {(data.prospects.length > 0 || data.repairs.length > 0) && (
+          <div style={{ fontSize: 10, color: "#ccc", marginTop: 4 }}>
+            直接{data.visitors.length}
+            {data.prospects.length > 0 ? ` ＋ 見込${data.prospects.length}` : ""}
+            {data.repairs.length   > 0 ? ` ＋ 修理${data.repairs.length}` : ""}
+          </div>
+        )}
+      </div>
+
+      {/* ── 来店ボタン (full width) ──────────────────── */}
+      <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "14px", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: data.visitors.length > 0 ? 10 : 0 }}>
+          <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb" }}>VISITORS　<span style={{ fontSize: 18, fontWeight: 200, color: "#111", letterSpacing: -1 }}>{data.visitors.length}</span></div>
+        </div>
         <button
           onClick={incVisitor}
           style={{
-            width: 80, height: 80, borderRadius: "50%", flexShrink: 0,
+            width: "100%", padding: "18px 0",
             background: flashVisitor ? "#333" : "#111",
             border: "none", cursor: "pointer", color: "#fff",
             transition: "background 0.1s", WebkitTapHighlightColor: "transparent",
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+            fontSize: 11, letterSpacing: 3, textTransform: "uppercase"
           }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
             <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
           </svg>
-          <span style={{ fontSize: 8, letterSpacing: 2 }}>来店</span>
+          来店
         </button>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 56, fontWeight: 200, letterSpacing: -2, lineHeight: 1, color: flashVisitor ? "#555" : "#111", transition: "color 0.1s" }}>{totalVisitors}</div>
-          <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginTop: 4 }}>
-            TOTAL
-            {(data.prospects.length > 0 || data.repairs.length > 0) && (
-              <span style={{ marginLeft: 8, color: "#ccc" }}>
-                ({data.visitors}直接 {data.prospects.length > 0 ? `+見込${data.prospects.length} ` : ""}{data.repairs.length > 0 ? `+修理${data.repairs.length}` : ""})
-              </span>
-            )}
+        {data.visitors.length > 0 && (
+          <div style={{ marginTop: 10 }}>
+            {data.visitors.map((v, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 0", borderTop: "1px solid #f0eeec" }}>
+                <div style={{ fontSize: 11, color: "#aaa", letterSpacing: 1 }}>{i + 1}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ fontSize: 10, color: "#aaa", letterSpacing: 1 }}>{v.time}</div>
+                  <button onClick={() => removeVisitor(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2, lineHeight: 1, fontSize: 14 }}>×</button>
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
-        <button onClick={undoVisitor} style={{ padding: "8px 14px", background: "none", border: "1px solid #e0dedd", cursor: data.visitors > 0 ? "pointer" : "default", fontSize: 9, letterSpacing: 2, color: data.visitors > 0 ? "#888" : "#ccc" }}>Undo</button>
+        )}
       </div>
 
       {/* ── 見込客 / 修理 / 購入 ────────────────────── */}
