@@ -270,6 +270,101 @@ const IconCheck    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill=
 
 const MEMBERS = ["成田", "正田", "尾谷", "淵原"];
 
+// ── Counter sub-components (defined outside to prevent remount on every render) ──
+function EntryList({ entries, category, label, onAdd, onRemove, onUpdateFrame }) {
+  const isProspect = category === "prospects";
+  const counts = MEMBERS.reduce((acc, m) => { acc[m] = entries.filter(e => e.staff === m).length; return acc; }, {});
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px 14px", marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginBottom: 6 }}>{label}</div>
+          <div style={{ fontSize: 40, fontWeight: 200, letterSpacing: -1 }}>{entries.length}</div>
+        </div>
+        <button onClick={onAdd}
+          style={{ padding: "10px 18px", background: "#111", border: "none", cursor: "pointer", color: "#fff", fontSize: 18, lineHeight: 1, marginTop: 4 }}>＋</button>
+      </div>
+      {entries.length > 0 && (
+        <>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {MEMBERS.filter(m => counts[m] > 0).map(m => (
+              <div key={m} style={{ fontSize: 10, color: "#555", background: "#f5f4f2", padding: "3px 10px" }}>{m} {counts[m]}</div>
+            ))}
+          </div>
+          {entries.map((e, i) => (
+            <div key={i} style={{ borderTop: "1px solid #f0eeec", paddingTop: 8, marginTop: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isProspect ? 6 : 0 }}>
+                <div style={{ fontSize: 12, color: "#444" }}>{e.staff}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ fontSize: 10, color: "#aaa", letterSpacing: 1 }}>{e.time}</div>
+                  <button onClick={() => onRemove(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2, lineHeight: 1, fontSize: 14 }}>×</button>
+                </div>
+              </div>
+              {isProspect && (
+                <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                  {[0, 1, 2].map(fi => (
+                    <input key={fi}
+                      value={(e.frames || ["", "", ""])[fi]}
+                      onChange={ev => onUpdateFrame(i, fi, ev.target.value)}
+                      placeholder={`フレーム${fi + 1}`}
+                      style={{
+                        flex: 1, padding: "5px 8px", border: "1px solid #e0dedd",
+                        fontSize: 11, color: "#555", background: "#fafaf9",
+                        outline: "none", minWidth: 0
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+function PurchaseList({ entries, onAdd, onRemove }) {
+  const saleCounts = MEMBERS.reduce((acc, m) => { acc[m] = entries.filter(e => e.salesperson === m).length; return acc; }, {});
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px 14px", marginBottom: 10 }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+        <div>
+          <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginBottom: 6 }}>PURCHASE</div>
+          <div style={{ fontSize: 40, fontWeight: 200, letterSpacing: -1 }}>{entries.length}</div>
+        </div>
+        <button onClick={onAdd}
+          style={{ padding: "10px 18px", background: "#111", border: "none", cursor: "pointer", color: "#fff", fontSize: 18, lineHeight: 1, marginTop: 4 }}>＋</button>
+      </div>
+      {entries.length > 0 && (
+        <>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+            {MEMBERS.filter(m => saleCounts[m] > 0).map(m => (
+              <div key={m} style={{ fontSize: 10, color: "#555", background: "#f5f4f2", padding: "3px 10px" }}>{m} {saleCounts[m]}</div>
+            ))}
+          </div>
+          {entries.map((e, i) => (
+            <div key={i} style={{ borderTop: "1px solid #f0eeec", padding: "7px 0" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ fontSize: 11, color: "#444", lineHeight: 1.8 }}>
+                  <span style={{ fontSize: 9, color: "#bbb", marginRight: 4 }}>販売</span>{e.salesperson}
+                  <br />
+                  <span style={{ fontSize: 9, color: "#bbb", marginRight: 4 }}>サポ</span>
+                  <span style={{ color: e.supporter ? "#444" : "#ccc" }}>{e.supporter || "—"}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, alignSelf: "flex-start" }}>
+                  <div style={{ fontSize: 10, color: "#aaa", letterSpacing: 1 }}>{e.time}</div>
+                  <button onClick={() => onRemove(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2, lineHeight: 1, fontSize: 14 }}>×</button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── Counter View ──────────────────────────────────────────────
 function CounterView({ member, year, month, shifts, saveShifts }) {
   const todayStr = (() => {
@@ -392,103 +487,6 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
 
   const totalVisitors = data.visitors.length + data.prospects.length + data.repairs.length;
 
-  // ── Sub-components ────────────────────────────────
-  function EntryList({ category, label }) {
-    const entries  = data[category];
-    const isProspect = category === "prospects";
-    const counts   = MEMBERS.reduce((acc, m) => { acc[m] = entries.filter(e => e.staff === m).length; return acc; }, {});
-    return (
-      <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px 14px", marginBottom: 10 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
-          <div>
-            <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginBottom: 6 }}>{label}</div>
-            <div style={{ fontSize: 40, fontWeight: 200, letterSpacing: -1 }}>{entries.length}</div>
-          </div>
-          <button onClick={() => setStaffPicker(category)}
-            style={{ padding: "10px 18px", background: "#111", border: "none", cursor: "pointer", color: "#fff", fontSize: 18, lineHeight: 1, marginTop: 4 }}>＋</button>
-        </div>
-        {entries.length > 0 && (
-          <>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-              {MEMBERS.filter(m => counts[m] > 0).map(m => (
-                <div key={m} style={{ fontSize: 10, color: "#555", background: "#f5f4f2", padding: "3px 10px" }}>{m} {counts[m]}</div>
-              ))}
-            </div>
-            {entries.map((e, i) => (
-              <div key={i} style={{ borderTop: "1px solid #f0eeec", paddingTop: 8, marginTop: 2 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isProspect ? 6 : 0 }}>
-                  <div style={{ fontSize: 12, color: "#444" }}>{e.staff}</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ fontSize: 10, color: "#aaa", letterSpacing: 1 }}>{e.time}</div>
-                    <button onClick={() => removeEntry(category, i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2, lineHeight: 1, fontSize: 14 }}>×</button>
-                  </div>
-                </div>
-                {isProspect && (
-                  <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-                    {[0, 1, 2].map(fi => (
-                      <input key={fi}
-                        value={(e.frames || ["", "", ""])[fi]}
-                        onChange={ev => updateFrame(i, fi, ev.target.value)}
-                        placeholder={`フレーム${fi + 1}`}
-                        style={{
-                          flex: 1, padding: "5px 8px", border: "1px solid #e0dedd",
-                          fontSize: 11, color: "#555", background: "#fafaf9",
-                          outline: "none", minWidth: 0
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </>
-        )}
-      </div>
-    );
-  }
-
-  function PurchaseList() {
-    const entries = data.purchases;
-    const saleCounts = MEMBERS.reduce((acc, m) => { acc[m] = entries.filter(e => e.salesperson === m).length; return acc; }, {});
-    return (
-      <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px 14px", marginBottom: 10 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
-          <div>
-            <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginBottom: 6 }}>PURCHASE</div>
-            <div style={{ fontSize: 40, fontWeight: 200, letterSpacing: -1 }}>{entries.length}</div>
-          </div>
-          <button onClick={() => setPurchaseFlow({ step: 1 })}
-            style={{ padding: "10px 18px", background: "#111", border: "none", cursor: "pointer", color: "#fff", fontSize: 18, lineHeight: 1, marginTop: 4 }}>＋</button>
-        </div>
-        {entries.length > 0 && (
-          <>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-              {MEMBERS.filter(m => saleCounts[m] > 0).map(m => (
-                <div key={m} style={{ fontSize: 10, color: "#555", background: "#f5f4f2", padding: "3px 10px" }}>{m} {saleCounts[m]}</div>
-              ))}
-            </div>
-            {entries.map((e, i) => (
-              <div key={i} style={{ borderTop: "1px solid #f0eeec", padding: "7px 0" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ fontSize: 11, color: "#444", lineHeight: 1.8 }}>
-                    <span style={{ fontSize: 9, color: "#bbb", marginRight: 4 }}>販売</span>{e.salesperson}
-                    <br />
-                    <span style={{ fontSize: 9, color: "#bbb", marginRight: 4 }}>サポ</span>
-                    <span style={{ color: e.supporter ? "#444" : "#ccc" }}>{e.supporter || "—"}</span>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, alignSelf: "flex-start" }}>
-                    <div style={{ fontSize: 10, color: "#aaa", letterSpacing: 1 }}>{e.time}</div>
-                    <button onClick={() => removePurchase(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2, lineHeight: 1, fontSize: 14 }}>×</button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-      </div>
-    );
-  }
-
   // ── Modal picker ──────────────────────────────────
   const modalOpen = staffPicker || purchaseFlow;
   const modalTitle = staffPicker === "prospects" ? "見込客担当" : staffPicker === "repairs" ? "修理担当"
@@ -553,9 +551,17 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
       </div>
 
       {/* ── 見込 / 修理 / 購入 ──────────────────────── */}
-      <EntryList category="prospects" label="PROSPECT" />
-      <EntryList category="repairs"   label="REPAIR" />
-      <PurchaseList />
+      <EntryList entries={data.prospects} category="prospects" label="PROSPECT"
+        onAdd={() => setStaffPicker("prospects")}
+        onRemove={i => removeEntry("prospects", i)}
+        onUpdateFrame={updateFrame} />
+      <EntryList entries={data.repairs} category="repairs" label="REPAIR"
+        onAdd={() => setStaffPicker("repairs")}
+        onRemove={i => removeEntry("repairs", i)}
+        onUpdateFrame={null} />
+      <PurchaseList entries={data.purchases}
+        onAdd={() => setPurchaseFlow({ step: 1 })}
+        onRemove={removePurchase} />
 
       {/* ── Reset ───────────────────────────────────── */}
       <div style={{ marginTop: 10 }}>
