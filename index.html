@@ -270,6 +270,114 @@ const IconCheck    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill=
 
 const MEMBERS = ["成田", "正田", "尾谷", "淵原"];
 
+// ── Counter View ──────────────────────────────────────────────
+function CounterView() {
+  const todayKey = () => {
+    const d = new Date();
+    return `visitors:${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  };
+  const todayLabel = () => {
+    const d = new Date();
+    const days = ["日","月","火","水","木","金","土"];
+    return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} ${days[d.getDay()]}`;
+  };
+
+  const [count, setCount] = useState(() => {
+    try { return parseInt(storage.get(todayKey()) || "0", 10); } catch(e) { return 0; }
+  });
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [flash, setFlash] = useState(false);
+
+  function save(n) {
+    setCount(n);
+    try { storage.set(todayKey(), String(n)); } catch(e) {}
+  }
+
+  function increment() {
+    save(count + 1);
+    setFlash(true);
+    setTimeout(() => setFlash(false), 120);
+    setConfirmReset(false);
+  }
+
+  function decrement() {
+    if (count > 0) save(count - 1);
+    setConfirmReset(false);
+  }
+
+  function reset() {
+    save(0);
+    setConfirmReset(false);
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 24px 40px" }}>
+      <div style={{ fontSize: 10, letterSpacing: 3, color: "#bbb", textTransform: "uppercase", marginBottom: 32 }}>{todayLabel()}</div>
+
+      {/* Count display */}
+      <div style={{
+        fontSize: 96, fontWeight: 200, letterSpacing: -4, lineHeight: 1,
+        color: flash ? "#555" : "#111",
+        transition: "color 0.12s",
+        marginBottom: 48, minWidth: 160, textAlign: "center"
+      }}>{count}</div>
+
+      {/* Main tap button */}
+      <button
+        onClick={increment}
+        style={{
+          width: 180, height: 180, borderRadius: "50%",
+          background: flash ? "#222" : "#111",
+          border: "none", cursor: "pointer", color: "#fff",
+          fontSize: 11, letterSpacing: 3, textTransform: "uppercase",
+          transition: "background 0.12s",
+          WebkitTapHighlightColor: "transparent",
+          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6
+        }}
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        <span>来店</span>
+      </button>
+
+      {/* Sub controls */}
+      <div style={{ display: "flex", gap: 16, marginTop: 36 }}>
+        <button
+          onClick={decrement}
+          style={{
+            padding: "10px 22px", background: "none",
+            border: "1px solid #ddd", cursor: count > 0 ? "pointer" : "default",
+            fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
+            color: count > 0 ? "#666" : "#ccc", transition: "all 0.2s"
+          }}
+        >Undo</button>
+
+        {confirmReset ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => setConfirmReset(false)} style={{ padding: "10px 16px", background: "none", border: "1px solid #ddd", cursor: "pointer", fontSize: 9, letterSpacing: 2, color: "#888" }}>Cancel</button>
+            <button onClick={reset} style={{ padding: "10px 16px", background: "#c0392b", border: "none", cursor: "pointer", fontSize: 9, letterSpacing: 2, color: "#fff" }}>Reset</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmReset(true)}
+            style={{
+              padding: "10px 22px", background: "none",
+              border: "1px solid #ddd", cursor: "pointer",
+              fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "#bbb"
+            }}
+          >Reset</button>
+        )}
+      </div>
+
+      <div style={{ marginTop: 24, fontSize: 10, letterSpacing: 1, color: "#ccc" }}>本日の来店者数</div>
+    </div>
+  );
+}
+
 // ── Main App ─────────────────────────────────────────────────
 function ShiftManager() {
   const today = new Date();
@@ -504,14 +612,14 @@ function ShiftManager() {
 
           {/* Tabs */}
           <div style={{ display: "flex", borderTop: "1px solid #e0dedd", alignItems: "center" }}>
-            {["calendar", "list"].map(v => (
+            {["calendar", "list", "counter"].map(v => (
               <button key={v} onClick={() => { setView(v); setSelectMode(false); setSelected([]); }} style={{
                 flex: 1, padding: "10px 0", background: "none", border: "none", cursor: "pointer",
                 fontSize: 9, letterSpacing: 3, textTransform: "uppercase",
                 color: view === v ? "#111" : "#bbb",
                 borderBottom: view === v ? "1.5px solid #111" : "1.5px solid transparent",
                 transition: "all 0.2s"
-              }}>{v === "calendar" ? "Calendar" : "List"}</button>
+              }}>{v === "calendar" ? "Cal" : v === "list" ? "List" : "Counter"}</button>
             ))}
             {view === "list" && (
               <button onClick={() => { setSelectMode(s => !s); setSelected([]); setConfirmMultiDelete(false); }} style={{
@@ -527,26 +635,29 @@ function ShiftManager() {
       </div>
 
       {/* ── Content ────────────────────────────────── */}
-      <div
-        key={`${year}-${month}`}
-        className={slideDir === "left" ? "slide-in-left" : slideDir === "right" ? "slide-in-right" : ""}
-        style={{ paddingBottom: selectMode ? 80 : 20, padding: "20px 16px" }}
-        onTouchStart={e => { const t = e.touches[0]; e.currentTarget._tx = t.clientX; e.currentTarget._ty = t.clientY; }}
-        onTouchEnd={e => {
-          const dx = e.changedTouches[0].clientX - e.currentTarget._tx;
-          const dy = e.changedTouches[0].clientY - e.currentTarget._ty;
-          if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-            if (dx < 0) nextMonth(); else prevMonth();
-          }
-        }}
-      >
-        {!loaded
-          ? <div style={{ textAlign: "center", padding: 60, fontSize: 11, letterSpacing: 2, color: "#bbb", textTransform: "uppercase" }}>Loading</div>
-          : view === "calendar"
-            ? <CalendarView year={year} month={month} daysInMonth={daysInMonth} firstDow={firstDow} shifts={shifts} onDayClick={openEdit} allShifts={allShifts} />
-            : <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} allShifts={allShifts} />
-        }
-      </div>
+      {view === "counter"
+        ? <CounterView />
+        : <div
+            key={`${year}-${month}`}
+            className={slideDir === "left" ? "slide-in-left" : slideDir === "right" ? "slide-in-right" : ""}
+            style={{ paddingBottom: selectMode ? 80 : 20, padding: "20px 16px" }}
+            onTouchStart={e => { const t = e.touches[0]; e.currentTarget._tx = t.clientX; e.currentTarget._ty = t.clientY; }}
+            onTouchEnd={e => {
+              const dx = e.changedTouches[0].clientX - e.currentTarget._tx;
+              const dy = e.changedTouches[0].clientY - e.currentTarget._ty;
+              if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                if (dx < 0) nextMonth(); else prevMonth();
+              }
+            }}
+          >
+            {!loaded
+              ? <div style={{ textAlign: "center", padding: 60, fontSize: 11, letterSpacing: 2, color: "#bbb", textTransform: "uppercase" }}>Loading</div>
+              : view === "calendar"
+                ? <CalendarView year={year} month={month} daysInMonth={daysInMonth} firstDow={firstDow} shifts={shifts} onDayClick={openEdit} allShifts={allShifts} />
+                : <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} allShifts={allShifts} />
+            }
+          </div>
+      }
 
       {/* ── Multi Delete Bar ───────────────────────── */}
       {selectMode && (
