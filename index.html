@@ -271,109 +271,211 @@ const IconCheck    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill=
 const MEMBERS = ["成田", "正田", "尾谷", "淵原"];
 
 // ── Counter View ──────────────────────────────────────────────
-function CounterView() {
-  const todayKey = () => {
+function CounterView({ member, year, month, shifts, saveShifts }) {
+  const todayStr = (() => {
     const d = new Date();
-    return `visitors:${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-  };
-  const todayLabel = () => {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  })();
+  const todayLabel = (() => {
     const d = new Date();
     const days = ["日","月","火","水","木","金","土"];
     return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} ${days[d.getDay()]}`;
+  })();
+  const storageKey = `counter:${todayStr}`;
+
+  const loadData = () => {
+    try {
+      const raw = storage.get(storageKey);
+      if (raw) return JSON.parse(raw);
+    } catch(e) {}
+    return { visitors: 0, prospects: 0, repairs: 0, purchases: [] };
   };
 
-  const [count, setCount] = useState(() => {
-    try { return parseInt(storage.get(todayKey()) || "0", 10); } catch(e) { return 0; }
-  });
+  const [data, setData] = useState(loadData);
+  const [flashVisitor, setFlashVisitor] = useState(false);
+  const [staffPicker, setStaffPicker] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
-  const [flash, setFlash] = useState(false);
 
-  function save(n) {
-    setCount(n);
-    try { storage.set(todayKey(), String(n)); } catch(e) {}
+  function persist(next) {
+    setData(next);
+    try { storage.set(storageKey, JSON.stringify(next)); } catch(e) {}
   }
 
-  function increment() {
-    save(count + 1);
-    setFlash(true);
-    setTimeout(() => setFlash(false), 120);
-    setConfirmReset(false);
+  function incVisitor() {
+    persist({ ...data, visitors: data.visitors + 1 });
+    setFlashVisitor(true);
+    setTimeout(() => setFlashVisitor(false), 120);
+  }
+  function undoVisitor() { if (data.visitors > 0) persist({ ...data, visitors: data.visitors - 1 }); }
+
+  function incProspect()  { persist({ ...data, prospects: data.prospects + 1 }); }
+  function decProspect()  { if (data.prospects > 0) persist({ ...data, prospects: data.prospects - 1 }); }
+  function incRepair()    { persist({ ...data, repairs: data.repairs + 1 }); }
+  function decRepair()    { if (data.repairs > 0) persist({ ...data, repairs: data.repairs - 1 }); }
+
+  function addPurchase(staff) {
+    const now = new Date();
+    const time = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+    persist({ ...data, purchases: [...data.purchases, { staff, time }] });
+    setStaffPicker(false);
+  }
+  function removePurchase(i) {
+    const next = data.purchases.filter((_, idx) => idx !== i);
+    persist({ ...data, purchases: next });
   }
 
-  function decrement() {
-    if (count > 0) save(count - 1);
-    setConfirmReset(false);
+  function buildMemoLine() {
+    const pCount = data.purchases.length;
+    const staffSummary = MEMBERS.map(m => {
+      const n = data.purchases.filter(p => p.staff === m).length;
+      return n > 0 ? `${m}${n}` : null;
+    }).filter(Boolean).join("・");
+    const parts = [];
+    if (data.visitors  > 0) parts.push(`来店${data.visitors}`);
+    if (data.prospects > 0) parts.push(`見込${data.prospects}`);
+    if (data.repairs   > 0) parts.push(`修理${data.repairs}`);
+    if (pCount > 0) parts.push(`購入${pCount}${staffSummary ? `(${staffSummary})` : ""}`);
+    return parts.join(" / ");
   }
 
   function reset() {
-    save(0);
+    const memo = buildMemoLine();
+    if (memo && shifts && saveShifts) {
+      const existing = shifts[todayStr];
+      if (existing) {
+        const prev = existing.memo ? existing.memo.trim() : "";
+        const next = prev ? `${prev}\n${memo}` : memo;
+        saveShifts({ ...shifts, [todayStr]: { ...existing, memo: next } });
+      }
+    }
+    persist({ visitors: 0, prospects: 0, repairs: 0, purchases: [] });
     setConfirmReset(false);
   }
 
+  const purchaseCount = data.purchases.length;
+
+  // Staff count per member for 購入
+  const staffCounts = MEMBERS.reduce((acc, m) => {
+    acc[m] = data.purchases.filter(p => p.staff === m).length;
+    return acc;
+  }, {});
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 24px 40px" }}>
-      <div style={{ fontSize: 10, letterSpacing: 3, color: "#bbb", textTransform: "uppercase", marginBottom: 32 }}>{todayLabel()}</div>
+    <div style={{ padding: "24px 16px 60px" }}>
+      <div style={{ fontSize: 10, letterSpacing: 3, color: "#bbb", textTransform: "uppercase", marginBottom: 24, textAlign: "center" }}>{todayLabel}</div>
 
-      {/* Count display */}
-      <div style={{
-        fontSize: 96, fontWeight: 200, letterSpacing: -4, lineHeight: 1,
-        color: flash ? "#555" : "#111",
-        transition: "color 0.12s",
-        marginBottom: 48, minWidth: 160, textAlign: "center"
-      }}>{count}</div>
-
-      {/* Main tap button */}
-      <button
-        onClick={increment}
-        style={{
-          width: 180, height: 180, borderRadius: "50%",
-          background: flash ? "#222" : "#111",
-          border: "none", cursor: "pointer", color: "#fff",
-          fontSize: 11, letterSpacing: 3, textTransform: "uppercase",
-          transition: "background 0.12s",
-          WebkitTapHighlightColor: "transparent",
-          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6
-        }}
-      >
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-        </svg>
-        <span>来店</span>
-      </button>
-
-      {/* Sub controls */}
-      <div style={{ display: "flex", gap: 16, marginTop: 36 }}>
+      {/* ── 来店 (big) ───────────────────────────────── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 20, padding: "20px 20px", background: "#fff", border: "1px solid #e0dedd" }}>
         <button
-          onClick={decrement}
+          onClick={incVisitor}
           style={{
-            padding: "10px 22px", background: "none",
-            border: "1px solid #ddd", cursor: count > 0 ? "pointer" : "default",
-            fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
-            color: count > 0 ? "#666" : "#ccc", transition: "all 0.2s"
+            width: 80, height: 80, borderRadius: "50%", flexShrink: 0,
+            background: flashVisitor ? "#333" : "#111",
+            border: "none", cursor: "pointer", color: "#fff",
+            transition: "background 0.1s", WebkitTapHighlightColor: "transparent",
+            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4
           }}
-        >Undo</button>
-
-        {confirmReset ? (
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setConfirmReset(false)} style={{ padding: "10px 16px", background: "none", border: "1px solid #ddd", cursor: "pointer", fontSize: 9, letterSpacing: 2, color: "#888" }}>Cancel</button>
-            <button onClick={reset} style={{ padding: "10px 16px", background: "#c0392b", border: "none", cursor: "pointer", fontSize: 9, letterSpacing: 2, color: "#fff" }}>Reset</button>
-          </div>
-        ) : (
-          <button
-            onClick={() => setConfirmReset(true)}
-            style={{
-              padding: "10px 22px", background: "none",
-              border: "1px solid #ddd", cursor: "pointer",
-              fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: "#bbb"
-            }}
-          >Reset</button>
-        )}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          <span style={{ fontSize: 8, letterSpacing: 2 }}>来店</span>
+        </button>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 56, fontWeight: 200, letterSpacing: -2, lineHeight: 1, color: flashVisitor ? "#555" : "#111", transition: "color 0.1s" }}>{data.visitors}</div>
+          <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginTop: 4 }}>VISITORS</div>
+        </div>
+        <button onClick={undoVisitor} style={{ padding: "8px 14px", background: "none", border: "1px solid #e0dedd", cursor: data.visitors > 0 ? "pointer" : "default", fontSize: 9, letterSpacing: 2, color: data.visitors > 0 ? "#888" : "#ccc" }}>Undo</button>
       </div>
 
-      <div style={{ marginTop: 24, fontSize: 10, letterSpacing: 1, color: "#ccc" }}>本日の来店者数</div>
+      {/* ── 見込客 / 修理 ──────────────────────────── */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+        {[
+          { key: "prospects", label: "見込客", sub: "PROSPECT", inc: incProspect, dec: decProspect, val: data.prospects },
+          { key: "repairs",   label: "修理・部品", sub: "REPAIR",   inc: incRepair,   dec: decRepair,   val: data.repairs },
+        ].map(({ key, label, sub, inc, dec, val }) => (
+          <div key={key} style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px 14px" }}>
+            <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginBottom: 10 }}>{sub}</div>
+            <div style={{ fontSize: 40, fontWeight: 200, letterSpacing: -1, marginBottom: 12 }}>{val}</div>
+            <div style={{ display: "flex", gap: 6 }}>
+              <button onClick={dec} style={{ flex: 1, padding: "8px 0", background: "none", border: "1px solid #e0dedd", cursor: val > 0 ? "pointer" : "default", fontSize: 16, color: val > 0 ? "#555" : "#ccc", lineHeight: 1 }}>−</button>
+              <button onClick={inc} style={{ flex: 1, padding: "8px 0", background: "#111", border: "none", cursor: "pointer", fontSize: 16, color: "#fff", lineHeight: 1 }}>＋</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── 購入 ─────────────────────────────────────── */}
+      <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px 14px", marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginBottom: 6 }}>PURCHASE</div>
+            <div style={{ fontSize: 40, fontWeight: 200, letterSpacing: -1 }}>{purchaseCount}</div>
+          </div>
+          <button
+            onClick={() => setStaffPicker(true)}
+            style={{ padding: "10px 18px", background: "#111", border: "none", cursor: "pointer", color: "#fff", fontSize: 18, lineHeight: 1, marginTop: 4 }}
+          >＋</button>
+        </div>
+
+        {/* Staff breakdown */}
+        {purchaseCount > 0 && (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+            {MEMBERS.filter(m => staffCounts[m] > 0).map(m => (
+              <div key={m} style={{ fontSize: 10, color: "#555", background: "#f5f4f2", padding: "3px 10px", letterSpacing: 0.5 }}>{m} {staffCounts[m]}</div>
+            ))}
+          </div>
+        )}
+
+        {/* Purchase entries */}
+        {data.purchases.map((p, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderTop: "1px solid #f0eeec" }}>
+            <div style={{ fontSize: 12, color: "#444" }}>{p.staff}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ fontSize: 10, color: "#aaa", letterSpacing: 1 }}>{p.time}</div>
+              <button onClick={() => removePurchase(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2, lineHeight: 1, fontSize: 14 }}>×</button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Reset ────────────────────────────────────── */}
+      {confirmReset ? (
+        <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px" }}>
+          <div style={{ fontSize: 11, color: "#555", marginBottom: 4, lineHeight: 1.6 }}>リセットしてメモに記録します</div>
+          {buildMemoLine() && <div style={{ fontSize: 10, fontFamily: "monospace", color: "#888", background: "#f5f4f2", padding: "6px 10px", marginBottom: 12 }}>{buildMemoLine()}</div>}
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: "11px 0", background: "none", border: "1px solid #ddd", cursor: "pointer", fontSize: 9, letterSpacing: 2, color: "#888" }}>Cancel</button>
+            <button onClick={reset} style={{ flex: 1, padding: "11px 0", background: "#c0392b", border: "none", cursor: "pointer", fontSize: 9, letterSpacing: 2, color: "#fff" }}>Reset + Memo</button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setConfirmReset(true)}
+          style={{ width: "100%", padding: "12px 0", background: "none", border: "1px solid #ddd", cursor: "pointer", fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: "#bbb" }}
+        >Reset</button>
+      )}
+
+      {/* ── Staff Picker Modal ────────────────────────── */}
+      {staffPicker && (
+        <div
+          style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200 }}
+          onClick={() => setStaffPicker(false)}
+        >
+          <div style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "24px 20px 40px" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 9, letterSpacing: 3, color: "#bbb", textTransform: "uppercase", marginBottom: 20 }}>販売 / サポート担当</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              {MEMBERS.map(m => (
+                <button key={m} onClick={() => addPurchase(m)} style={{
+                  padding: "16px 0", background: "#f5f4f2", border: "1px solid #e0dedd",
+                  cursor: "pointer", fontSize: 14, fontWeight: 300, letterSpacing: 1, color: "#111"
+                }}>{m}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -636,7 +738,7 @@ function ShiftManager() {
 
       {/* ── Content ────────────────────────────────── */}
       {view === "counter"
-        ? <CounterView />
+        ? <CounterView member={member} year={year} month={month} shifts={shifts} saveShifts={saveShifts} />
         : <div
             key={`${year}-${month}`}
             className={slideDir === "left" ? "slide-in-left" : slideDir === "right" ? "slide-in-right" : ""}
