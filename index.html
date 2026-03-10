@@ -286,14 +286,20 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
   const loadData = () => {
     try {
       const raw = storage.get(storageKey);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const d = JSON.parse(raw);
+        // migrate old numeric format
+        if (typeof d.prospects === "number") d.prospects = [];
+        if (typeof d.repairs   === "number") d.repairs   = [];
+        return d;
+      }
     } catch(e) {}
-    return { visitors: 0, prospects: 0, repairs: 0, purchases: [] };
+    return { visitors: 0, prospects: [], repairs: [], purchases: [] };
   };
 
   const [data, setData] = useState(loadData);
   const [flashVisitor, setFlashVisitor] = useState(false);
-  const [staffPicker, setStaffPicker] = useState(false);
+  const [staffPicker, setStaffPicker] = useState(null); // null | "prospects" | "repairs" | "purchases"
   const [confirmReset, setConfirmReset] = useState(false);
 
   function persist(next) {
@@ -308,33 +314,33 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
   }
   function undoVisitor() { if (data.visitors > 0) persist({ ...data, visitors: data.visitors - 1 }); }
 
-  function incProspect()  { persist({ ...data, prospects: data.prospects + 1 }); }
-  function decProspect()  { if (data.prospects > 0) persist({ ...data, prospects: data.prospects - 1 }); }
-  function incRepair()    { persist({ ...data, repairs: data.repairs + 1 }); }
-  function decRepair()    { if (data.repairs > 0) persist({ ...data, repairs: data.repairs - 1 }); }
-
-  function addPurchase(staff) {
+  function addEntry(category, staff) {
     const now = new Date();
     const time = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
-    persist({ ...data, purchases: [...data.purchases, { staff, time }] });
-    setStaffPicker(false);
+    persist({ ...data, [category]: [...data[category], { staff, time }] });
+    setStaffPicker(null);
   }
-  function removePurchase(i) {
-    const next = data.purchases.filter((_, idx) => idx !== i);
-    persist({ ...data, purchases: next });
+  function removeEntry(category, i) {
+    persist({ ...data, [category]: data[category].filter((_, idx) => idx !== i) });
+  }
+
+  function staffSummary(entries) {
+    return MEMBERS.map(m => {
+      const n = entries.filter(e => e.staff === m).length;
+      return n > 0 ? `${m}${n}` : null;
+    }).filter(Boolean).join("・");
   }
 
   function buildMemoLine() {
-    const pCount = data.purchases.length;
-    const staffSummary = MEMBERS.map(m => {
-      const n = data.purchases.filter(p => p.staff === m).length;
-      return n > 0 ? `${m}${n}` : null;
-    }).filter(Boolean).join("・");
+    const pCount  = data.purchases.length;
+    const prCount = data.prospects.length;
+    const rCount  = data.repairs.length;
+    const total   = data.visitors + prCount + rCount;
     const parts = [];
-    if (data.visitors  > 0) parts.push(`来店${data.visitors}`);
-    if (data.prospects > 0) parts.push(`見込${data.prospects}`);
-    if (data.repairs   > 0) parts.push(`修理${data.repairs}`);
-    if (pCount > 0) parts.push(`購入${pCount}${staffSummary ? `(${staffSummary})` : ""}`);
+    if (total    > 0) parts.push(`来店${total}`);
+    if (prCount  > 0) { const s = staffSummary(data.prospects); parts.push(`見込${prCount}${s ? `(${s})` : ""}`); }
+    if (rCount   > 0) { const s = staffSummary(data.repairs);   parts.push(`修理${rCount}${s ? `(${s})` : ""}`); }
+    if (pCount   > 0) { const s = staffSummary(data.purchases); parts.push(`購入${pCount}${s ? `(${s})` : ""}`); }
     return parts.join(" / ");
   }
 
@@ -344,27 +350,57 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
       const existing = shifts[todayStr];
       if (existing) {
         const prev = existing.memo ? existing.memo.trim() : "";
-        const next = prev ? `${prev}\n${memo}` : memo;
-        saveShifts({ ...shifts, [todayStr]: { ...existing, memo: next } });
+        saveShifts({ ...shifts, [todayStr]: { ...existing, memo: prev ? `${prev}\n${memo}` : memo } });
       }
     }
-    persist({ visitors: 0, prospects: 0, repairs: 0, purchases: [] });
+    persist({ visitors: 0, prospects: [], repairs: [], purchases: [] });
     setConfirmReset(false);
   }
 
-  const purchaseCount = data.purchases.length;
+  const totalVisitors = data.visitors + data.prospects.length + data.repairs.length;
 
-  // Staff count per member for 購入
-  const staffCounts = MEMBERS.reduce((acc, m) => {
-    acc[m] = data.purchases.filter(p => p.staff === m).length;
-    return acc;
-  }, {});
+  function EntryList({ category, label }) {
+    const entries = data[category];
+    const counts  = MEMBERS.reduce((acc, m) => { acc[m] = entries.filter(e => e.staff === m).length; return acc; }, {});
+    return (
+      <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px 14px", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+          <div>
+            <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginBottom: 6 }}>{label}</div>
+            <div style={{ fontSize: 40, fontWeight: 200, letterSpacing: -1 }}>{entries.length}</div>
+          </div>
+          <button
+            onClick={() => setStaffPicker(category)}
+            style={{ padding: "10px 18px", background: "#111", border: "none", cursor: "pointer", color: "#fff", fontSize: 18, lineHeight: 1, marginTop: 4 }}
+          >＋</button>
+        </div>
+        {entries.length > 0 && (
+          <>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+              {MEMBERS.filter(m => counts[m] > 0).map(m => (
+                <div key={m} style={{ fontSize: 10, color: "#555", background: "#f5f4f2", padding: "3px 10px" }}>{m} {counts[m]}</div>
+              ))}
+            </div>
+            {entries.map((e, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderTop: "1px solid #f0eeec" }}>
+                <div style={{ fontSize: 12, color: "#444" }}>{e.staff}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ fontSize: 10, color: "#aaa", letterSpacing: 1 }}>{e.time}</div>
+                  <button onClick={() => removeEntry(category, i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2, lineHeight: 1, fontSize: 14 }}>×</button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: "24px 16px 60px" }}>
       <div style={{ fontSize: 10, letterSpacing: 3, color: "#bbb", textTransform: "uppercase", marginBottom: 24, textAlign: "center" }}>{todayLabel}</div>
 
-      {/* ── 来店 (big) ───────────────────────────────── */}
+      {/* ── 来店合計 (big) ──────────────────────────── */}
       <div style={{ display: "flex", alignItems: "center", gap: 20, marginBottom: 20, padding: "20px 20px", background: "#fff", border: "1px solid #e0dedd" }}>
         <button
           onClick={incVisitor}
@@ -383,91 +419,56 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
           <span style={{ fontSize: 8, letterSpacing: 2 }}>来店</span>
         </button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 56, fontWeight: 200, letterSpacing: -2, lineHeight: 1, color: flashVisitor ? "#555" : "#111", transition: "color 0.1s" }}>{data.visitors}</div>
-          <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginTop: 4 }}>VISITORS</div>
+          <div style={{ fontSize: 56, fontWeight: 200, letterSpacing: -2, lineHeight: 1, color: flashVisitor ? "#555" : "#111", transition: "color 0.1s" }}>{totalVisitors}</div>
+          <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginTop: 4 }}>
+            TOTAL
+            {(data.prospects.length > 0 || data.repairs.length > 0) && (
+              <span style={{ marginLeft: 8, color: "#ccc" }}>
+                ({data.visitors}直接 {data.prospects.length > 0 ? `+見込${data.prospects.length} ` : ""}{data.repairs.length > 0 ? `+修理${data.repairs.length}` : ""})
+              </span>
+            )}
+          </div>
         </div>
         <button onClick={undoVisitor} style={{ padding: "8px 14px", background: "none", border: "1px solid #e0dedd", cursor: data.visitors > 0 ? "pointer" : "default", fontSize: 9, letterSpacing: 2, color: data.visitors > 0 ? "#888" : "#ccc" }}>Undo</button>
       </div>
 
-      {/* ── 見込客 / 修理 ──────────────────────────── */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
-        {[
-          { key: "prospects", label: "見込客", sub: "PROSPECT", inc: incProspect, dec: decProspect, val: data.prospects },
-          { key: "repairs",   label: "修理・部品", sub: "REPAIR",   inc: incRepair,   dec: decRepair,   val: data.repairs },
-        ].map(({ key, label, sub, inc, dec, val }) => (
-          <div key={key} style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px 14px" }}>
-            <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginBottom: 10 }}>{sub}</div>
-            <div style={{ fontSize: 40, fontWeight: 200, letterSpacing: -1, marginBottom: 12 }}>{val}</div>
-            <div style={{ display: "flex", gap: 6 }}>
-              <button onClick={dec} style={{ flex: 1, padding: "8px 0", background: "none", border: "1px solid #e0dedd", cursor: val > 0 ? "pointer" : "default", fontSize: 16, color: val > 0 ? "#555" : "#ccc", lineHeight: 1 }}>−</button>
-              <button onClick={inc} style={{ flex: 1, padding: "8px 0", background: "#111", border: "none", cursor: "pointer", fontSize: 16, color: "#fff", lineHeight: 1 }}>＋</button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── 購入 ─────────────────────────────────────── */}
-      <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px 14px", marginBottom: 20 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-          <div>
-            <div style={{ fontSize: 9, letterSpacing: 2, color: "#bbb", marginBottom: 6 }}>PURCHASE</div>
-            <div style={{ fontSize: 40, fontWeight: 200, letterSpacing: -1 }}>{purchaseCount}</div>
-          </div>
-          <button
-            onClick={() => setStaffPicker(true)}
-            style={{ padding: "10px 18px", background: "#111", border: "none", cursor: "pointer", color: "#fff", fontSize: 18, lineHeight: 1, marginTop: 4 }}
-          >＋</button>
-        </div>
-
-        {/* Staff breakdown */}
-        {purchaseCount > 0 && (
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-            {MEMBERS.filter(m => staffCounts[m] > 0).map(m => (
-              <div key={m} style={{ fontSize: 10, color: "#555", background: "#f5f4f2", padding: "3px 10px", letterSpacing: 0.5 }}>{m} {staffCounts[m]}</div>
-            ))}
-          </div>
-        )}
-
-        {/* Purchase entries */}
-        {data.purchases.map((p, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 0", borderTop: "1px solid #f0eeec" }}>
-            <div style={{ fontSize: 12, color: "#444" }}>{p.staff}</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ fontSize: 10, color: "#aaa", letterSpacing: 1 }}>{p.time}</div>
-              <button onClick={() => removePurchase(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2, lineHeight: 1, fontSize: 14 }}>×</button>
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* ── 見込客 / 修理 / 購入 ────────────────────── */}
+      <EntryList category="prospects" label="PROSPECT" />
+      <EntryList category="repairs"   label="REPAIR" />
+      <EntryList category="purchases" label="PURCHASE" />
 
       {/* ── Reset ────────────────────────────────────── */}
-      {confirmReset ? (
-        <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px" }}>
-          <div style={{ fontSize: 11, color: "#555", marginBottom: 4, lineHeight: 1.6 }}>リセットしてメモに記録します</div>
-          {buildMemoLine() && <div style={{ fontSize: 10, fontFamily: "monospace", color: "#888", background: "#f5f4f2", padding: "6px 10px", marginBottom: 12 }}>{buildMemoLine()}</div>}
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: "11px 0", background: "none", border: "1px solid #ddd", cursor: "pointer", fontSize: 9, letterSpacing: 2, color: "#888" }}>Cancel</button>
-            <button onClick={reset} style={{ flex: 1, padding: "11px 0", background: "#c0392b", border: "none", cursor: "pointer", fontSize: 9, letterSpacing: 2, color: "#fff" }}>Reset + Memo</button>
+      <div style={{ marginTop: 10 }}>
+        {confirmReset ? (
+          <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px" }}>
+            <div style={{ fontSize: 11, color: "#555", marginBottom: 4, lineHeight: 1.6 }}>リセットしてメモに記録します</div>
+            {buildMemoLine() && <div style={{ fontSize: 10, fontFamily: "monospace", color: "#888", background: "#f5f4f2", padding: "6px 10px", marginBottom: 12 }}>{buildMemoLine()}</div>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmReset(false)} style={{ flex: 1, padding: "11px 0", background: "none", border: "1px solid #ddd", cursor: "pointer", fontSize: 9, letterSpacing: 2, color: "#888" }}>Cancel</button>
+              <button onClick={reset} style={{ flex: 1, padding: "11px 0", background: "#c0392b", border: "none", cursor: "pointer", fontSize: 9, letterSpacing: 2, color: "#fff" }}>Reset + Memo</button>
+            </div>
           </div>
-        </div>
-      ) : (
-        <button
-          onClick={() => setConfirmReset(true)}
-          style={{ width: "100%", padding: "12px 0", background: "none", border: "1px solid #ddd", cursor: "pointer", fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: "#bbb" }}
-        >Reset</button>
-      )}
+        ) : (
+          <button
+            onClick={() => setConfirmReset(true)}
+            style={{ width: "100%", padding: "12px 0", background: "none", border: "1px solid #ddd", cursor: "pointer", fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: "#bbb" }}
+          >Reset</button>
+        )}
+      </div>
 
       {/* ── Staff Picker Modal ────────────────────────── */}
       {staffPicker && (
         <div
           style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200 }}
-          onClick={() => setStaffPicker(false)}
+          onClick={() => setStaffPicker(null)}
         >
           <div style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "24px 20px 40px" }} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 9, letterSpacing: 3, color: "#bbb", textTransform: "uppercase", marginBottom: 20 }}>販売 / サポート担当</div>
+            <div style={{ fontSize: 9, letterSpacing: 3, color: "#bbb", textTransform: "uppercase", marginBottom: 20 }}>
+              {staffPicker === "prospects" ? "見込客担当" : staffPicker === "repairs" ? "修理担当" : "販売 / サポート担当"}
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {MEMBERS.map(m => (
-                <button key={m} onClick={() => addPurchase(m)} style={{
+                <button key={m} onClick={() => addEntry(staffPicker, m)} style={{
                   padding: "16px 0", background: "#f5f4f2", border: "1px solid #e0dedd",
                   cursor: "pointer", fontSize: 14, fontWeight: 300, letterSpacing: 1, color: "#111"
                 }}>{m}</button>
