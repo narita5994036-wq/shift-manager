@@ -1021,17 +1021,25 @@ function ShiftManager() {
                 {editData.status === "出勤" && (
                   <div style={{ marginBottom: 20 }}>
                     <label style={labelSm}>休憩</label>
-                    <div style={{ display: "flex", border: "1px solid #e0dedd" }}>
-                      {[["なし", 0], ["30分", 30], ["1時間", 60], ["1.5時間", 90]].map(([label, val], i) => (
+                    <div style={{ display: "flex", border: "1px solid #e0dedd", marginBottom: 6 }}>
+                      {[["なし", 0], ["30分", 30], ["45分", 45], ["1時間", 60], ["1.5時間", 90]].map(([label, val], i) => (
                         <button key={val} onClick={() => setEditData(prev => ({ ...prev, breakTime: val }))} style={{
                           flex: 1, padding: "9px 0",
                           background: (editData.breakTime ?? 60) === val ? "#111" : "#fff",
-                          border: "none", borderRight: i < 3 ? "1px solid #e0dedd" : "none",
-                          cursor: "pointer", fontSize: 10, letterSpacing: 1,
+                          border: "none", borderRight: i < 4 ? "1px solid #e0dedd" : "none",
+                          cursor: "pointer", fontSize: 9, letterSpacing: 1,
                           color: (editData.breakTime ?? 60) === val ? "#fff" : "#aaa",
                           transition: "all 0.15s"
                         }}>{label}</button>
                       ))}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", border: "1px solid #e0dedd" }}>
+                      <input type="number" min="0" step="5"
+                        value={editData.breakTime ?? 60}
+                        onChange={e => { const v = parseInt(e.target.value, 10); setEditData(prev => ({ ...prev, breakTime: isNaN(v) ? 0 : v })); }}
+                        style={{ flex: 1, border: "none", padding: "7px 10px", fontSize: 11, outline: "none", color: "#555", background: "transparent" }}
+                      />
+                      <span style={{ fontSize: 10, color: "#bbb", paddingRight: 10 }}>分（手入力）</span>
                     </div>
                   </div>
                 )}
