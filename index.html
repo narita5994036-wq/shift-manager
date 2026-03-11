@@ -465,7 +465,12 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
     const pCount  = data.purchases.length;
     const total   = vCount + prCount + rCount;
     const parts   = [];
-    if (total   > 0) parts.push(`来店${total}`);
+    if (total   > 0) {
+      const domestic = data.visitors.filter(v => v.type !== "overseas").length + prCount + rCount;
+      const overseas = data.visitors.filter(v => v.type === "overseas").length;
+      const breakdown = overseas > 0 ? `国内${domestic}・海外${overseas}` : null;
+      parts.push(`来店${total}${breakdown ? `(${breakdown})` : ""}`);
+    }
     if (prCount > 0) { const s = staffSummary(data.prospects); parts.push(`見込${prCount}${s ? `(${s})` : ""}`); }
     if (rCount  > 0) { const s = staffSummary(data.repairs);   parts.push(`修理${rCount}${s ? `(${s})` : ""}`); }
     if (pCount  > 0) { const s = staffSummary(data.purchases, "salesperson"); parts.push(`購入${pCount}${s ? `(${s})` : ""}`); }
