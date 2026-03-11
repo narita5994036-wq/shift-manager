@@ -1120,6 +1120,24 @@ function ImportModal({ onClose, saveShifts }) {
       // 複数メンバー形式: { members: { 成田: { shifts: {...} }, ... } }
       // 単一メンバー形式: { year, month, shifts: {...} }
       if (data.members) {
+        // 日付ごとの出勤人数を集計してbreakTimeを設定（2人体勢=90分、3人以上=60分）
+        const dateCounts = {};
+        Object.values(data.members).forEach(md => {
+          if (!md.shifts) return;
+          Object.entries(md.shifts).forEach(([date, s]) => {
+            if (s.status === "出勤") dateCounts[date] = (dateCounts[date] || 0) + 1;
+          });
+        });
+        Object.values(data.members).forEach(md => {
+          if (!md.shifts) return;
+          Object.entries(md.shifts).forEach(([date, s]) => {
+            if (s.status === "出勤") {
+              const n = dateCounts[date] || 1;
+              s.breakTime = n === 2 ? 90 : 60;
+            }
+          });
+        });
+
         let count = 0;
         Object.entries(data.members).forEach(([name, memberData]) => {
           if (!memberData.shifts) return;
