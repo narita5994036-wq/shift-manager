@@ -324,7 +324,7 @@ function EntryList({ entries, category, label, onAdd, onRemove, onUpdateFrame })
   );
 }
 
-function PurchaseList({ entries, onAdd, onRemove }) {
+function PurchaseList({ entries, onAdd, onRemove, onUpdateFrame }) {
   const saleCounts = MEMBERS.reduce((acc, m) => { acc[m] = entries.filter(e => e.salesperson === m).length; return acc; }, {});
   return (
     <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px 14px", marginBottom: 10 }}>
@@ -345,7 +345,7 @@ function PurchaseList({ entries, onAdd, onRemove }) {
           </div>
           {entries.map((e, i) => (
             <div key={i} style={{ borderTop: "1px solid #f0eeec", padding: "7px 0" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                 <div style={{ fontSize: 11, color: "#444", lineHeight: 1.8 }}>
                   <span style={{ fontSize: 9, color: "#bbb", marginRight: 4 }}>販売</span>{e.salesperson}
                   <br />
@@ -356,6 +356,20 @@ function PurchaseList({ entries, onAdd, onRemove }) {
                   <div style={{ fontSize: 10, color: "#aaa", letterSpacing: 1 }}>{e.time}</div>
                   <button onClick={() => onRemove(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2, lineHeight: 1, fontSize: 14 }}>×</button>
                 </div>
+              </div>
+              <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                {[0, 1, 2].map(fi => (
+                  <input key={fi}
+                    value={(e.frames || ["", "", ""])[fi]}
+                    onChange={ev => onUpdateFrame && onUpdateFrame(i, fi, ev.target.value)}
+                    placeholder={`フレーム${fi + 1}`}
+                    style={{
+                      flex: 1, padding: "5px 8px", border: "1px solid #e0dedd",
+                      fontSize: 11, color: "#555", background: "#fafaf9",
+                      outline: "none", minWidth: 0
+                    }}
+                  />
+                ))}
               </div>
             </div>
           ))}
@@ -443,8 +457,17 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
   // ── Purchases (2-step) ────────────────────────────
   function pickSalesperson(staff) { setPurchaseFlow({ step: 2, salesperson: staff }); }
   function pickSupporter(staff) {   // staff=null means skip
-    persist({ ...data, purchases: [...data.purchases, { salesperson: purchaseFlow.salesperson, supporter: staff, time: nowTime() }] });
+    persist({ ...data, purchases: [...data.purchases, { salesperson: purchaseFlow.salesperson, supporter: staff, time: nowTime(), frames: ["", "", ""] }] });
     setPurchaseFlow(null);
+  }
+  function updatePurchaseFrame(purchaseIdx, frameIdx, value) {
+    const next = data.purchases.map((p, i) => {
+      if (i !== purchaseIdx) return p;
+      const frames = [...(p.frames || ["", "", ""])];
+      frames[frameIdx] = value;
+      return { ...p, frames };
+    });
+    persist({ ...data, purchases: next });
   }
   function removePurchase(i) {
     persist({ ...data, purchases: data.purchases.filter((_, idx) => idx !== i) });
@@ -471,9 +494,10 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
       const breakdown = overseas > 0 ? `国内${domestic}・海外${overseas}` : null;
       parts.push(`来店${total}${breakdown ? `(${breakdown})` : ""}`);
     }
-    if (prCount > 0) { const s = staffSummary(data.prospects); parts.push(`見込${prCount}${s ? `(${s})` : ""}`); }
+    const framesSummary = (entries) => entries.flatMap(e => (e.frames || []).filter(Boolean)).join("・");
+    if (prCount > 0) { const s = staffSummary(data.prospects); const f = framesSummary(data.prospects); parts.push(`見込${prCount}${s ? `(${s})` : ""}${f ? `[${f}]` : ""}`); }
     if (rCount  > 0) { const s = staffSummary(data.repairs);   parts.push(`修理${rCount}${s ? `(${s})` : ""}`); }
-    if (pCount  > 0) { const s = staffSummary(data.purchases, "salesperson"); parts.push(`購入${pCount}${s ? `(${s})` : ""}`); }
+    if (pCount  > 0) { const s = staffSummary(data.purchases, "salesperson"); const f = framesSummary(data.purchases); parts.push(`購入${pCount}${s ? `(${s})` : ""}${f ? `[${f}]` : ""}`); }
     return parts.join(" / ");
   }
 
@@ -583,7 +607,8 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
         onUpdateFrame={null} />
       <PurchaseList entries={data.purchases}
         onAdd={() => setPurchaseFlow({ step: 1 })}
-        onRemove={removePurchase} />
+        onRemove={removePurchase}
+        onUpdateFrame={updatePurchaseFrame} />
 
       {/* ── Reset ───────────────────────────────────── */}
       <div style={{ marginTop: 10 }}>
