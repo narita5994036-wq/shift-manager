@@ -1010,7 +1010,7 @@ function ShiftManager() {
 
                 {editData.status === "出勤" && (
                   <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
-                    {[["早番", "09:30", "18:30"], ["遅番", "11:00", "20:00"]].map(([label, start, end]) => {
+                    {[["早番", "09:30", "18:30"], ["中番", "10:30", "19:30"], ["遅番", "11:30", "20:30"]].map(([label, start, end]) => {
                       const active = editData.startTime === start && editData.endTime === end;
                       return (
                         <button key={label} onClick={e => { e.stopPropagation(); setEditData(prev => ({ ...prev, startTime: start, endTime: end })); }}
