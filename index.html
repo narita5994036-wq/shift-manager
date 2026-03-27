@@ -1621,18 +1621,31 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
   }
 
   // Phase 5: 番種(早/中/遅)を割り当て
+  //  ・各日で必ず早番を1人入れる
+  //  ・同日に同じ番種が重複しない
   const res = {};
   MEMBERS.forEach(m => { res[m] = {}; });
   for (let d = 1; d <= dim; d++) {
     const workers = MEMBERS.filter(m => work[m][d] === true);
-    const isBusy = busySet.has(d);
     const usedTypes = [];
-    for (const m of workers) {
-      const t = bestType(m, isBusy ? usedTypes : []);
+
+    // 早番をまず「早番の累計が最少のメンバー」に割り当て
+    const byEarlyCount = [...workers].sort((a, b) => typeCnt[a]["早"] - typeCnt[b]["早"]);
+    const earlyWorker = byEarlyCount[0];
+    if (earlyWorker) {
+      res[earlyWorker][d] = "早";
+      typeCnt[earlyWorker]["早"]++;
+      usedTypes.push("早");
+    }
+
+    // 残りのメンバーは早番を除いた中でbestTypeを割り当て(重複なし)
+    for (const m of byEarlyCount.slice(1)) {
+      const t = bestType(m, usedTypes); // 使用済み番種を除外
       res[m][d] = t;
       typeCnt[m][t]++;
-      if (isBusy) usedTypes.push(t);
+      usedTypes.push(t);
     }
+
     MEMBERS.filter(m => work[m][d] !== true).forEach(m => { res[m][d] = "休"; });
   }
 
