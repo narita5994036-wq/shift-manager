@@ -1571,7 +1571,9 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
       } else {
         // ペース判定: 目標ペースより遅れていれば出勤(ceil で積極的に出勤)
         const expected = Math.ceil((targetDays / dim) * d);
-        if (cur < expected) {
+        // 前日も休だった場合は連休を避けるため出勤を優先
+        const prevWasOff = d > 1 && work[m][d - 1] === false;
+        if (cur < expected || prevWasOff) {
           work[m][d] = true;
           wToday++;
         } else {
@@ -1613,7 +1615,13 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
     if (wCount > MAX_STAFF && !busySet.has(d)) {
       const workMs = MEMBERS
         .filter(m => work[m][d] === true)
-        .sort((a, b) => workCount(b) - workCount(a)); // 出勤日数が多い人から
+        .sort((a, b) => {
+          // 前日出勤だった人を優先して休に(その人を休にしても連休にならない)
+          const aYest = d > 1 && work[a][d - 1] === true ? 1 : 0;
+          const bYest = d > 1 && work[b][d - 1] === true ? 1 : 0;
+          if (aYest !== bYest) return bYest - aYest;
+          return workCount(b) - workCount(a); // 出勤日数が多い人から
+        });
       for (const m of workMs) {
         if (wCount <= MAX_STAFF) break;
         // 正田・尾谷ペア: 相手が休なら自分は休にできない
