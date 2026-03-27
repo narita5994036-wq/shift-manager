@@ -1504,23 +1504,22 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
   const targetDays = Math.round(targetHours / DRAFT_H_PER_DAY);
   const busySet = new Set(busyDays || []);
   const TYPES = ["早", "中", "遅"];
+  const MIN_STAFF = 2;
+  const MAX_STAFF = 3;
 
-  // result[member][day] = shift type
-  const res = {};
-  MEMBERS.forEach(m => { res[m] = {}; });
-
-  // Lock requested-off days
+  // work[member][day]: true=出勤 false=休 undefined=未決定
+  const work = {};
   MEMBERS.forEach(m => {
-    (reqOff[m] || []).forEach(d => { res[m][d] = "休"; });
+    work[m] = {};
+    (reqOff[m] || []).forEach(d => { work[m][d] = false; }); // 希望休は確定
   });
 
-  // Per-member helpers
-  const workCount = m => Object.values(res[m]).filter(v => v && v !== "休").length;
-  const streak = (m, beforeDay) => {
+  const workCount  = m => Object.values(work[m]).filter(Boolean).length;
+  const dayWorkers = d => MEMBERS.filter(m => work[m][d] === true).length;
+  const streak = (m, d) => {
     let s = 0;
-    for (let d = beforeDay - 1; d >= 1; d--) {
-      if (res[m][d] && res[m][d] !== "休") s++;
-      else break;
+    for (let i = d - 1; i >= 1; i--) {
+      if (work[m][i] === true) s++; else break;
     }
     return s;
   };
@@ -1528,56 +1527,113 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
   MEMBERS.forEach(m => { typeCnt[m] = { "早": 0, "中": 0, "遅": 0 }; });
   const bestType = (m, exclude = []) => {
     const avail = TYPES.filter(t => !exclude.includes(t));
-    return (avail.sort((a, b) => typeCnt[m][a] - typeCnt[m][b])[0]) || "早";
-  };
-  const assignWork = (m, d, type) => {
-    res[m][d] = type;
-    typeCnt[m][type]++;
+    return avail.sort((a, b) => typeCnt[m][a] - typeCnt[m][b])[0] || "早";
   };
 
-  // Phase 1: Busy days — assign 早/中/遅 to 3 members each
+  // Phase 1: 繁忙日 → MAX_STAFF人を出勤
   for (const d of [...busySet].sort((a, b) => a - b)) {
-    const avail = MEMBERS.filter(m => !res[m][d]);
-    // Prioritize members with fewer work days
+    const avail = MEMBERS.filter(m => work[m][d] === undefined);
     avail.sort((a, b) => workCount(a) - workCount(b));
-    const used = [];
-    avail.slice(0, 3).forEach(m => {
-      const t = bestType(m, used);
-      assignWork(m, d, t);
-      used.push(t);
-    });
-    avail.slice(3).forEach(m => { res[m][d] = "休"; });
+    avail.slice(0, MAX_STAFF).forEach(m => { work[m][d] = true; });
+    avail.slice(MAX_STAFF).forEach(m => { work[m][d] = false; });
   }
 
-  // Phase 2: Fill non-busy days day by day
+  // Phase 2: 通常日 — 1日あたりMIN_STAFF〜MAX_STAFF人になるよう割り当て
   for (let d = 1; d <= dim; d++) {
     if (busySet.has(d)) continue;
-    for (const m of MEMBERS) {
-      if (res[m][d]) continue;
-      const cur   = workCount(m);
-      const left  = dim - d + 1;   // days remaining (incl. today)
-      const need  = targetDays - cur;
-      const curStreak = streak(m, d);
 
-      const mustOff  = curStreak >= maxConsecutive || need <= 0;
-      const mustWork = !mustOff && need >= left;
+    // 未決定メンバーを「赤字が多い順（出勤日数が少ない順）」に処理
+    const unassigned = MEMBERS.filter(m => work[m][d] === undefined);
+    unassigned.sort((a, b) => workCount(a) - workCount(b));
 
-      if (mustOff) {
-        res[m][d] = "休";
+    let wToday = dayWorkers(d);
+
+    for (let i = 0; i < unassigned.length; i++) {
+      const m = unassigned[i];
+      const remaining = unassigned.length - i; // 自分を含む残り未決定人数
+      const cur = workCount(m);
+      const left = dim - d + 1;
+      const need = targetDays - cur;
+      const s = streak(m, d);
+
+      const maxReached = wToday >= MAX_STAFF;
+      const mustRest   = s >= maxConsecutive || need <= 0;
+      // 残りメンバー全員が出勤してもMIN_STAFFに届かない場合は出勤必須
+      const mustWork   = !mustRest && !maxReached && (wToday + remaining - 1) < MIN_STAFF;
+
+      if (maxReached || mustRest) {
+        work[m][d] = false;
       } else if (mustWork) {
-        assignWork(m, d, bestType(m));
+        work[m][d] = true;
+        wToday++;
       } else {
-        // Pace-based: work if behind target pace
+        // ペース判定: 目標ペースより遅れていれば出勤
         const expected = Math.round((targetDays / dim) * d);
-        if (cur < expected) assignWork(m, d, bestType(m));
-        else res[m][d] = "休";
+        if (cur < expected) {
+          work[m][d] = true;
+          wToday++;
+        } else {
+          // 自分が休んでも残りでMIN_STAFFを満たせるか確認
+          const futureCanWork = remaining - 1;
+          if (wToday + futureCanWork < MIN_STAFF) {
+            work[m][d] = true; // 満たせないので出勤
+            wToday++;
+          } else {
+            work[m][d] = false;
+          }
+        }
       }
     }
   }
 
-  // Phase 3: Fill any still-unassigned days as 休
+  // Phase 3: 未割り当てを休に確定
   for (let d = 1; d <= dim; d++) {
-    MEMBERS.forEach(m => { if (!res[m][d]) res[m][d] = "休"; });
+    MEMBERS.forEach(m => { if (work[m][d] === undefined) work[m][d] = false; });
+  }
+
+  // Phase 4: MIN/MAX違反を後処理で修正
+  for (let d = 1; d <= dim; d++) {
+    let wCount = dayWorkers(d);
+
+    // 出勤人数が少なすぎる場合: 休の人を出勤に変更
+    if (wCount < MIN_STAFF) {
+      const offMs = MEMBERS
+        .filter(m => work[m][d] === false && !(reqOff[m] || []).includes(d))
+        .sort((a, b) => workCount(a) - workCount(b)); // 出勤日数が少ない人優先
+      for (const m of offMs) {
+        if (wCount >= MIN_STAFF) break;
+        work[m][d] = true;
+        wCount++;
+      }
+    }
+
+    // 出勤人数が多すぎる場合: 出勤の人を休に変更（繁忙日は除く）
+    if (wCount > MAX_STAFF && !busySet.has(d)) {
+      const workMs = MEMBERS
+        .filter(m => work[m][d] === true)
+        .sort((a, b) => workCount(b) - workCount(a)); // 出勤日数が多い人から
+      for (const m of workMs) {
+        if (wCount <= MAX_STAFF) break;
+        work[m][d] = false;
+        wCount--;
+      }
+    }
+  }
+
+  // Phase 5: 番種(早/中/遅)を割り当て
+  const res = {};
+  MEMBERS.forEach(m => { res[m] = {}; });
+  for (let d = 1; d <= dim; d++) {
+    const workers = MEMBERS.filter(m => work[m][d] === true);
+    const isBusy = busySet.has(d);
+    const usedTypes = [];
+    for (const m of workers) {
+      const t = bestType(m, isBusy ? usedTypes : []);
+      res[m][d] = t;
+      typeCnt[m][t]++;
+      if (isBusy) usedTypes.push(t);
+    }
+    MEMBERS.filter(m => work[m][d] !== true).forEach(m => { res[m][d] = "休"; });
   }
 
   return res;
