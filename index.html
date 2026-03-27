@@ -1530,12 +1530,10 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
     return avail.sort((a, b) => typeCnt[m][a] - typeCnt[m][b])[0] || "早";
   };
 
-  // Phase 1: 繁忙日 → MAX_STAFF人を出勤
+  // Phase 1: 繁忙日 → 3〜4人出勤(希望休以外は全員)
   for (const d of [...busySet].sort((a, b) => a - b)) {
     const avail = MEMBERS.filter(m => work[m][d] === undefined);
-    avail.sort((a, b) => workCount(a) - workCount(b));
-    avail.slice(0, MAX_STAFF).forEach(m => { work[m][d] = true; });
-    avail.slice(MAX_STAFF).forEach(m => { work[m][d] = false; });
+    avail.forEach(m => { work[m][d] = true; }); // 全員出勤(希望休確定済みの人は除外済み)
   }
 
   // Phase 2: 通常日 — 1日あたりMIN_STAFF〜MAX_STAFF人になるよう割り当て
@@ -1571,8 +1569,8 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
         work[m][d] = true;
         wToday++;
       } else {
-        // ペース判定: 目標ペースより遅れていれば出勤
-        const expected = Math.round((targetDays / dim) * d);
+        // ペース判定: 目標ペースより遅れていれば出勤(ceil で積極的に出勤)
+        const expected = Math.ceil((targetDays / dim) * d);
         if (cur < expected) {
           work[m][d] = true;
           wToday++;
