@@ -1496,8 +1496,92 @@ const DRAFT_COLORS = {
   "休": { bg: "#f5f4f2", text: "#bbb"    },
 };
 const DRAFT_H_PER_DAY = 8;   // 9時間 − 1時間休憩
-const DRAFT_TARGET_H  = 180;
 const DRAFT_MAX_H     = 190; // 残業10h上限
+
+// ── Auto-schedule algorithm ───────────────────────────────────
+function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsecutive) {
+  const dim = new Date(year, month, 0).getDate();
+  const targetDays = Math.round(targetHours / DRAFT_H_PER_DAY);
+  const busySet = new Set(busyDays || []);
+  const TYPES = ["早", "中", "遅"];
+
+  // result[member][day] = shift type
+  const res = {};
+  MEMBERS.forEach(m => { res[m] = {}; });
+
+  // Lock requested-off days
+  MEMBERS.forEach(m => {
+    (reqOff[m] || []).forEach(d => { res[m][d] = "休"; });
+  });
+
+  // Per-member helpers
+  const workCount = m => Object.values(res[m]).filter(v => v && v !== "休").length;
+  const streak = (m, beforeDay) => {
+    let s = 0;
+    for (let d = beforeDay - 1; d >= 1; d--) {
+      if (res[m][d] && res[m][d] !== "休") s++;
+      else break;
+    }
+    return s;
+  };
+  const typeCnt = {};
+  MEMBERS.forEach(m => { typeCnt[m] = { "早": 0, "中": 0, "遅": 0 }; });
+  const bestType = (m, exclude = []) => {
+    const avail = TYPES.filter(t => !exclude.includes(t));
+    return (avail.sort((a, b) => typeCnt[m][a] - typeCnt[m][b])[0]) || "早";
+  };
+  const assignWork = (m, d, type) => {
+    res[m][d] = type;
+    typeCnt[m][type]++;
+  };
+
+  // Phase 1: Busy days — assign 早/中/遅 to 3 members each
+  for (const d of [...busySet].sort((a, b) => a - b)) {
+    const avail = MEMBERS.filter(m => !res[m][d]);
+    // Prioritize members with fewer work days
+    avail.sort((a, b) => workCount(a) - workCount(b));
+    const used = [];
+    avail.slice(0, 3).forEach(m => {
+      const t = bestType(m, used);
+      assignWork(m, d, t);
+      used.push(t);
+    });
+    avail.slice(3).forEach(m => { res[m][d] = "休"; });
+  }
+
+  // Phase 2: Fill non-busy days day by day
+  for (let d = 1; d <= dim; d++) {
+    if (busySet.has(d)) continue;
+    for (const m of MEMBERS) {
+      if (res[m][d]) continue;
+      const cur   = workCount(m);
+      const left  = dim - d + 1;   // days remaining (incl. today)
+      const need  = targetDays - cur;
+      const curStreak = streak(m, d);
+
+      const mustOff  = curStreak >= maxConsecutive || need <= 0;
+      const mustWork = !mustOff && need >= left;
+
+      if (mustOff) {
+        res[m][d] = "休";
+      } else if (mustWork) {
+        assignWork(m, d, bestType(m));
+      } else {
+        // Pace-based: work if behind target pace
+        const expected = Math.round((targetDays / dim) * d);
+        if (cur < expected) assignWork(m, d, bestType(m));
+        else res[m][d] = "休";
+      }
+    }
+  }
+
+  // Phase 3: Fill any still-unassigned days as 休
+  for (let d = 1; d <= dim; d++) {
+    MEMBERS.forEach(m => { if (!res[m][d]) res[m][d] = "休"; });
+  }
+
+  return res;
+}
 
 function DraftView({ year, month }) {
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -1507,27 +1591,37 @@ function DraftView({ year, month }) {
     try { const r = storage.get(sk); return r ? JSON.parse(r) : { assignments: {}, busyDays: [], requestedOff: {} }; }
     catch { return { assignments: {}, busyDays: [], requestedOff: {} }; }
   });
-  const [mode, setMode] = useState("assign"); // "assign" | "request"
+  const [mode, setMode]       = useState("assign"); // "assign" | "request"
+  const [targetH, setTargetH] = useState(180);
+  const [maxCons, setMaxCons] = useState(5);
+  const [autoFlash, setAutoFlash] = useState(false);
 
   function save(next) {
     setDraft(next);
     try { storage.set(sk, JSON.stringify(next)); } catch {}
   }
 
+  function handleAuto() {
+    const newAssign = buildAutoSchedule(
+      year, month, draft.requestedOff, draft.busyDays, targetH, maxCons
+    );
+    save({ ...draft, assignments: newAssign });
+    setAutoFlash(true);
+    setTimeout(() => setAutoFlash(false), 1200);
+  }
+
+  function handleClear() {
+    save({ ...draft, assignments: {} });
+  }
+
   function cycleShift(member, day) {
-    const cur = draft.assignments[member]?.[day] ?? null;
+    const cur  = draft.assignments[member]?.[day] ?? null;
     const next = DRAFT_TYPES[(DRAFT_TYPES.indexOf(cur) + 1) % DRAFT_TYPES.length];
-    save({
-      ...draft,
-      assignments: {
-        ...draft.assignments,
-        [member]: { ...(draft.assignments[member] || {}), [day]: next }
-      }
-    });
+    save({ ...draft, assignments: { ...draft.assignments, [member]: { ...(draft.assignments[member] || {}), [day]: next } } });
   }
 
   function toggleReqOff(member, day) {
-    const cur = draft.requestedOff[member] || [];
+    const cur  = draft.requestedOff[member] || [];
     const next = cur.includes(day) ? cur.filter(d => d !== day) : [...cur, day];
     save({ ...draft, requestedOff: { ...draft.requestedOff, [member]: next } });
   }
@@ -1553,20 +1647,55 @@ function DraftView({ year, month }) {
   memberStats.forEach(({ m, totalH }) => {
     if (totalH > DRAFT_MAX_H)
       alerts.push({ t: "w", msg: `${m}: ${totalH}h — 上限(${DRAFT_MAX_H}h)超え` });
-    else if (totalH < DRAFT_TARGET_H)
-      alerts.push({ t: "i", msg: `${m}: ${totalH}h — 目標まで${DRAFT_TARGET_H - totalH}h不足` });
-    else
-      alerts.push({ t: "ok", msg: `${m}: ${totalH}h — 範囲内` });
+    else if (totalH < targetH)
+      alerts.push({ t: "i", msg: `${m}: ${totalH}h — 目標まで${targetH - totalH}h不足` });
   });
   for (let d = 1; d <= daysInMonth; d++) {
     if ((draft.busyDays || []).includes(d) && dayStaff[d - 1] < 3)
-      alerts.push({ t: "w", msg: `${month}/${d}: 繁忙日 出勤${dayStaff[d - 1]}人 (3人必要)` });
+      alerts.push({ t: "w", msg: `${month}/${d}: 繁忙日 出勤${dayStaff[d - 1]}人(3人必要)` });
   }
-  const warnAlerts = alerts.filter(a => a.t === "w");
-  const otherAlerts = alerts.filter(a => a.t !== "w");
+
+  const numInput = (val, set, min, max, label) => (
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <span style={{ fontSize: 9, color: "#aaa", letterSpacing: 1 }}>{label}</span>
+      <input type="number" value={val} min={min} max={max}
+        onChange={e => set(Math.min(max, Math.max(min, Number(e.target.value))))}
+        style={{ width: 40, padding: "3px 6px", border: "1px solid #e0dedd", fontSize: 12,
+          textAlign: "center", background: "#fafaf9", outline: "none" }} />
+    </div>
+  );
 
   return (
     <div style={{ background: "#fff" }}>
+      {/* ── Auto controls ── */}
+      <div style={{ padding: "10px 14px", borderBottom: "1px solid #e0dedd", background: "#fafaf9" }}>
+        {/* Settings row */}
+        <div style={{ display: "flex", gap: 16, marginBottom: 10, flexWrap: "wrap" }}>
+          {numInput(targetH, setTargetH, 140, 190, "目標")}
+          <span style={{ fontSize: 9, color: "#ccc", alignSelf: "center" }}>h</span>
+          {numInput(maxCons, setMaxCons, 3, 7, "連勤上限")}
+          <span style={{ fontSize: 9, color: "#ccc", alignSelf: "center" }}>日</span>
+        </div>
+        {/* Action buttons */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={handleAuto} style={{
+            flex: 2, padding: "10px 0",
+            background: autoFlash ? "#2d6a4f" : "#111", color: "#fff",
+            border: "none", cursor: "pointer",
+            fontSize: 10, letterSpacing: 3, textTransform: "uppercase",
+            transition: "background 0.3s"
+          }}>
+            {autoFlash ? "Done!" : "Auto"}
+          </button>
+          <button onClick={handleClear} style={{
+            flex: 1, padding: "10px 0",
+            background: "none", color: "#aaa",
+            border: "1px solid #e0dedd", cursor: "pointer",
+            fontSize: 10, letterSpacing: 2, textTransform: "uppercase"
+          }}>Clear</button>
+        </div>
+      </div>
+
       {/* mode toggle */}
       <div style={{ display: "flex", borderBottom: "1px solid #e0dedd", position: "sticky", top: 0, zIndex: 10, background: "#fff" }}>
         {[["assign", "シフト組み"], ["request", "希望休設定"]].map(([id, lbl]) => (
@@ -1583,7 +1712,7 @@ function DraftView({ year, month }) {
       {/* member stats */}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${MEMBERS.length}, 1fr)`, borderBottom: "1px solid #e0dedd", background: "#fafaf9" }}>
         {memberStats.map(({ m, workDays, totalH }) => {
-          const color = totalH > DRAFT_MAX_H ? "#c0392b" : totalH < DRAFT_TARGET_H ? "#aaa" : "#2d6a4f";
+          const color = totalH > DRAFT_MAX_H ? "#c0392b" : totalH < targetH ? "#aaa" : "#2d6a4f";
           return (
             <div key={m} style={{ padding: "8px 4px", textAlign: "center", borderRight: "1px solid #e0dedd" }}>
               <div style={{ fontSize: 9, letterSpacing: 1, color: "#aaa", marginBottom: 1 }}>{m}</div>
@@ -1595,17 +1724,12 @@ function DraftView({ year, month }) {
       </div>
 
       {/* alerts */}
-      {warnAlerts.length > 0 && (
+      {alerts.length > 0 && (
         <div style={{ padding: "8px 12px", borderBottom: "1px solid #f0eeec", background: "#fffdf8" }}>
-          {warnAlerts.map((a, i) => (
-            <div key={i} style={{ fontSize: 10, color: "#c0392b", lineHeight: 1.9 }}>⚠ {a.msg}</div>
-          ))}
-        </div>
-      )}
-      {otherAlerts.filter(a => a.t === "i").length > 0 && (
-        <div style={{ padding: "8px 12px", borderBottom: "1px solid #f0eeec" }}>
-          {otherAlerts.filter(a => a.t === "i").map((a, i) => (
-            <div key={i} style={{ fontSize: 10, color: "#999", lineHeight: 1.9 }}>· {a.msg}</div>
+          {alerts.map((a, i) => (
+            <div key={i} style={{ fontSize: 10, color: a.t === "w" ? "#c0392b" : "#999", lineHeight: 1.9 }}>
+              {a.t === "w" ? "⚠ " : "· "}{a.msg}
+            </div>
           ))}
         </div>
       )}
@@ -1635,14 +1759,12 @@ function DraftView({ year, month }) {
             borderBottom: "1px solid #f5f4f2",
             background: isBusy && cnt < 3 ? "#fff8f8" : isBusy ? "#fffef5" : "#fff"
           }}>
-            {/* date */}
             <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
               <span style={{ fontSize: 13, fontWeight: 300, color: isSun ? "#c0392b" : isSat ? "#555" : "#111" }}>{day}</span>
               <span style={{ fontSize: 8, letterSpacing: 1, color: isSun ? "#c0392b" : "#bbb" }}>{WEEKDAY_JP[dow]}</span>
               {isBusy && <span style={{ fontSize: 7, color: cnt >= 3 ? "#2d6a4f" : "#c0392b" }}>{cnt}人</span>}
             </div>
 
-            {/* member cells */}
             {MEMBERS.map(m => {
               if (mode === "request") {
                 const isReq = (draft.requestedOff[m] || []).includes(day);
@@ -1658,9 +1780,9 @@ function DraftView({ year, month }) {
                   </button>
                 );
               }
-              const st = draft.assignments[m]?.[day] ?? null;
+              const st   = draft.assignments[m]?.[day] ?? null;
               const isReq = (draft.requestedOff[m] || []).includes(day);
-              const col = DRAFT_COLORS[st];
+              const col  = DRAFT_COLORS[st];
               return (
                 <button key={m} onClick={() => cycleShift(m, day)} style={{
                   border: "none", borderLeft: "1px solid #f5f4f2", minHeight: 44,
@@ -1675,7 +1797,6 @@ function DraftView({ year, month }) {
               );
             })}
 
-            {/* busy toggle */}
             <button onClick={() => toggleBusy(day)} style={{
               border: "none", borderLeft: "1px solid #f5f4f2", minHeight: 44,
               background: isBusy ? "#fffde0" : "#fff", cursor: "pointer",
@@ -1687,12 +1808,10 @@ function DraftView({ year, month }) {
         );
       })}
 
-      {/* hint */}
       <div style={{ padding: "14px 16px 32px", fontSize: 10, color: "#bbb", lineHeight: 1.9, whiteSpace: "pre-line" }}>
         {mode === "assign"
-          ? "タップ: — → 早(09:30) → 中(10:30) → 遅(11:30) → 休 → —\n★ で繁忙日を設定(3人体制が必要)\n目標: 180h / 上限: 190h"
-          : "タップして希望休を設定\nシフト組みタブで割り当て時に参考にできます"
-        }
+          ? "Autoで自動仮組み → 手動で微調整\nタップ: — → 早 → 中 → 遅 → 休 → —\n★ で繁忙日を設定(3人体制)"
+          : "タップして希望休を設定\n設定後にシフト組みタブでAutoを実行"}
       </div>
     </div>
   );
