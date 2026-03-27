@@ -114,7 +114,7 @@ const MARCH_2026_OTANI = {
   "2026-03-31": { status: "出勤", startTime: "11:00", endTime: "20:00", breakTime: 60, memo: "" },
 };
 
-// ── 淵原 3月シフト（スクリーンショットより・7勤）──────────────
+// ── 中谷 3月シフト（スクリーンショットより・7勤）──────────────
 const MARCH_2026_FUCHIHARA = {
   "2026-03-01": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
   "2026-03-02": { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" },
@@ -268,7 +268,7 @@ const IconTrash    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill=
 const IconArrow    = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
 const IconCheck    = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 
-const MEMBERS = ["成田", "正田", "尾谷", "淵原"];
+const MEMBERS = ["成田", "正田", "尾谷", "中谷"];
 
 // ── Counter sub-components (defined outside to prevent remount on every render) ──
 function EntryList({ entries, category, label, onAdd, onRemove, onUpdateFrame }) {
@@ -698,7 +698,7 @@ function ShiftManager() {
         "成田": MARCH_2026_DATA,
         "正田": MARCH_2026_MASADA,
         "尾谷": MARCH_2026_OTANI,
-        "淵原": MARCH_2026_FUCHIHARA,
+        "中谷": MARCH_2026_FUCHIHARA,
       };
       const init = initMap[member];
       if (init) {
@@ -1113,9 +1113,9 @@ function ImportModal({ onClose, saveShifts }) {
   const [jsonError, setJsonError] = useState("");
   const [jsonSuccess, setJsonSuccess] = useState(false);
 
-  const prompt = `シフト表のスクショを添付します。全員（成田・正田・尾谷・淵原）の列を読み取り、index.htmlのシフトデータを更新してGitHubへpushしてください。`;
+  const prompt = `シフト表のスクショを添付します。全員（成田・正田・尾谷・中谷）の列を読み取り、index.htmlのシフトデータを更新してGitHubへpushしてください。`;
 
-  const promptJson = `シフト表のスクショを添付します。全員（成田・正田・尾谷・淵原）の列を読み取って、全員分のシフトデータを以下のJSON形式で出力してください（コードブロック不要）:\n{"members":{"成田":{"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"18:30","breakTime":60,"memo":""}}},"正田":{"shifts":{}},"尾谷":{"shifts":{}},"淵原":{"shifts":{}}}}`;
+  const promptJson = `シフト表のスクショを添付します。全員（成田・正田・尾谷・中谷）の列を読み取って、全員分のシフトデータを以下のJSON形式で出力してください（コードブロック不要）:\n{"members":{"成田":{"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"18:30","breakTime":60,"memo":""}}},"正田":{"shifts":{}},"尾谷":{"shifts":{}},"中谷":{"shifts":{}}}}`;
 
   const [copiedJson, setCopiedJson] = useState(false);
 
