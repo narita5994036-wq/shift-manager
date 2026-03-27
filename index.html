@@ -1559,7 +1559,11 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
       const maxReached = wToday >= MAX_STAFF;
       const mustRest   = s >= maxConsecutive || need <= 0;
       // 残りメンバー全員が出勤してもMIN_STAFFに届かない場合は出勤必須
-      const mustWork   = !mustRest && !maxReached && (wToday + remaining - 1) < MIN_STAFF;
+      const minStaffForce = (wToday + remaining - 1) < MIN_STAFF;
+      // 正田・尾谷ペア制約: 相手が休確定なら自分は出勤必須
+      const PAIR = { "正田": "尾谷", "尾谷": "正田" };
+      const pairForce = PAIR[m] && work[PAIR[m]][d] === false;
+      const mustWork   = !mustRest && !maxReached && (minStaffForce || pairForce);
 
       if (maxReached || mustRest) {
         work[m][d] = false;
@@ -1614,8 +1618,20 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
         .sort((a, b) => workCount(b) - workCount(a)); // 出勤日数が多い人から
       for (const m of workMs) {
         if (wCount <= MAX_STAFF) break;
+        // 正田・尾谷ペア: 相手が休なら自分は休にできない
+        const PAIR = { "正田": "尾谷", "尾谷": "正田" };
+        if (PAIR[m] && work[PAIR[m]][d] !== true) continue;
         work[m][d] = false;
         wCount--;
+      }
+    }
+
+    // ペア制約の後処理: 正田・尾谷がどちらも休になっていたら出勤日数が少ない方を出勤に変更
+    if (work["正田"][d] !== true && work["尾谷"][d] !== true) {
+      const fix = workCount("正田") <= workCount("尾谷") ? "正田" : "尾谷";
+      if (!(reqOff[fix] || []).includes(d)) {
+        work[fix][d] = true;
+        wCount++;
       }
     }
   }
