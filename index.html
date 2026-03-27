@@ -1674,6 +1674,17 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
   return res;
 }
 
+// 週休2日ベースで月の目標時間を計算(平日数 × 8h)
+function calcMonthlyTargetHours(year, month) {
+  const dim = new Date(year, month, 0).getDate();
+  let weekdays = 0;
+  for (let d = 1; d <= dim; d++) {
+    const dow = new Date(year, month - 1, d).getDay();
+    if (dow !== 0 && dow !== 6) weekdays++;
+  }
+  return weekdays * 8;
+}
+
 function DraftView({ year, month }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const sk = `draft:${year}-${String(month).padStart(2, "0")}`;
@@ -1683,8 +1694,9 @@ function DraftView({ year, month }) {
     catch { return { assignments: {}, busyDays: [], requestedOff: {} }; }
   });
   const [mode, setMode]       = useState("assign"); // "assign" | "request"
-  const [targetH, setTargetH] = useState(180);
+  const [targetH, setTargetH] = useState(() => calcMonthlyTargetHours(year, month));
   const [maxCons, setMaxCons] = useState(5);
+  const defaultTargetH = calcMonthlyTargetHours(year, month);
   const [autoFlash, setAutoFlash] = useState(false);
 
   function save(next) {
@@ -1761,11 +1773,20 @@ function DraftView({ year, month }) {
       {/* ── Auto controls ── */}
       <div style={{ padding: "10px 14px", borderBottom: "1px solid #e0dedd", background: "#fafaf9" }}>
         {/* Settings row */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 10, flexWrap: "wrap" }}>
-          {numInput(targetH, setTargetH, 140, 190, "目標")}
+        <div style={{ display: "flex", gap: 16, marginBottom: 6, flexWrap: "wrap", alignItems: "center" }}>
+          {numInput(targetH, setTargetH, 140, 220, "目標")}
           <span style={{ fontSize: 9, color: "#ccc", alignSelf: "center" }}>h</span>
+          {targetH !== defaultTargetH && (
+            <button onClick={() => setTargetH(defaultTargetH)} style={{
+              background: "none", border: "1px solid #e0dedd", padding: "3px 8px",
+              fontSize: 9, color: "#aaa", cursor: "pointer", letterSpacing: 1
+            }}>週休2日に戻す</button>
+          )}
           {numInput(maxCons, setMaxCons, 3, 7, "連勤上限")}
           <span style={{ fontSize: 9, color: "#ccc", alignSelf: "center" }}>日</span>
+        </div>
+        <div style={{ fontSize: 9, color: "#bbb", marginBottom: 10, letterSpacing: 0.5 }}>
+          週休2日ベース: {defaultTargetH / 8}日 × 8h = {defaultTargetH}h
         </div>
         {/* Action buttons */}
         <div style={{ display: "flex", gap: 8 }}>
