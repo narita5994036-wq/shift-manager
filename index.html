@@ -664,6 +664,7 @@ function ShiftManager() {
   const [editData, setEditData]   = useState(null);
   const [loaded, setLoaded]       = useState(false);
   const [pdfLoadState, setPdfLoadState] = useState(null); // null | "loading" | "done" | "error"
+  const [showPdfGuide, setShowPdfGuide] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState([]);
@@ -744,6 +745,7 @@ function ShiftManager() {
       MEMBERS.forEach(mem => { if (mem !== member && pdfData[mem]) all[mem] = pdfData[mem]; });
       setAllShifts(all);
       setYear(y); setMonth(m);
+      setView("calendar");
       setPdfLoadState("done");
       setTimeout(() => setPdfLoadState(null), 2000);
     } catch(e) {
@@ -797,7 +799,7 @@ function ShiftManager() {
   }
   const prevMonth = () => { setSlideDir("right"); if (month === 1) { setYear(y => y - 1); setMonth(12); } else setMonth(m => m - 1); };
   const nextMonth = () => { setSlideDir("left");  if (month === 12) { setYear(y => y + 1); setMonth(1); } else setMonth(m => m + 1); };
-  const goToday   = () => { setSlideDir(null); setYear(today.getFullYear()); setMonth(today.getMonth() + 1); };
+  const goToday   = () => { setSlideDir(null); setYear(today.getFullYear()); setMonth(today.getMonth() + 1); setView("calendar"); };
 
   const todayY = today.getFullYear();
   const todayM = today.getMonth() + 1;
@@ -871,7 +873,7 @@ function ShiftManager() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
               <button
-                onClick={() => loadPDFData(year, month)}
+                onClick={() => { if (!pdfLoadState) setShowPdfGuide(true); }}
                 disabled={pdfLoadState === "loading"}
                 style={{
                   background: pdfLoadState === "done" ? "#2d6a4f" : pdfLoadState === "error" ? "#c0392b" : "none",
@@ -965,7 +967,7 @@ function ShiftManager() {
                 ? <CalendarView year={year} month={month} daysInMonth={daysInMonth} firstDow={firstDow} shifts={shifts} onDayClick={openEdit} allShifts={allShifts} />
                 : view === "list"
                   ? <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} allShifts={allShifts} />
-                  : <DraftView year={year} month={month} />
+                  : <DraftView year={year} month={month} onAutoComplete={() => setView("calendar")} />
             }
           </div>
       }
@@ -1129,6 +1131,51 @@ function ShiftManager() {
                 <button onClick={saveEdit} className="primary-btn" style={{ width: "100%", padding: "13px 0", background: "#111", color: "#fff", border: "none", cursor: "pointer", fontSize: 10, letterSpacing: 3, textTransform: "uppercase" }}>Save</button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* PDF読込ガイドモーダル */}
+      {showPdfGuide && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200 }}
+          onClick={() => setShowPdfGuide(false)}>
+          <div style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 44px" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: 9, letterSpacing: 4, color: "#aaa", textTransform: "uppercase", marginBottom: 4 }}>PDF 読込</div>
+            <div style={{ fontSize: 20, fontWeight: 300, marginBottom: 20 }}>GitHubアップロード手順</div>
+
+            <div style={{ marginBottom: 20, padding: "10px 14px", background: "#f5f4f2", borderLeft: "2px solid #111" }}>
+              <div style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>ファイル名のルール</div>
+              <div style={{ fontFamily: "monospace", fontSize: 13, color: "#111" }}>shift_YYYY-MM.pdf</div>
+              <div style={{ marginTop: 4, fontSize: 11, color: "#888" }}>例: shift_2026-04.pdf（4月分）</div>
+            </div>
+
+            <div style={{ fontSize: 12, color: "#555", lineHeight: 1.9, marginBottom: 20 }}>
+              {[
+                ["01", "GitHubリポジトリを開く"],
+                ["02", "「data」フォルダを開く"],
+                ["03", "「Add file」→「Upload files」をタップ"],
+                ["04", `shift_${year}-${String(month).padStart(2,"0")}.pdf をアップロード`],
+                ["05", "「Commit changes」で確定"],
+                ["06", "Actions完了後（約1分）に読み込む"],
+              ].map(([n, s]) => (
+                <div key={n} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 8 }}>
+                  <span style={{ fontSize: 9, color: "#bbb", minWidth: 20, letterSpacing: 1 }}>{n}</span>
+                  <span style={{ flex: 1 }}>{s}</span>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setShowPdfGuide(false)} style={{
+                flex: 1, padding: "12px 0", background: "none", border: "1px solid #ddd",
+                cursor: "pointer", fontSize: 10, letterSpacing: 2, color: "#aaa"
+              }}>キャンセル</button>
+              <button onClick={() => { setShowPdfGuide(false); loadPDFData(year, month); }} style={{
+                flex: 2, padding: "12px 0", background: "#111", color: "#fff", border: "none",
+                cursor: "pointer", fontSize: 10, letterSpacing: 3, textTransform: "uppercase"
+              }}>読み込む ({year}/{String(month).padStart(2,"0")})</button>
+            </div>
           </div>
         </div>
       )}
@@ -1532,7 +1579,7 @@ const DRAFT_TIMES = {
 const minsToTime = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${m%60===0?'00':'30'}`;
 const timeToMins = t => { const [h,mm] = t.split(':').map(Number); return h*60+mm; };
 
-function DraftView({ year, month }) {
+function DraftView({ year, month, onAutoComplete }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const sk = `draft:${year}-${String(month).padStart(2, "0")}`;
 
@@ -1563,7 +1610,7 @@ function DraftView({ year, month }) {
     });
     save({ ...draft, assignments: newAssign, customTimes: mergedCustom });
     setAutoFlash(true);
-    setTimeout(() => setAutoFlash(false), 1200);
+    setTimeout(() => { setAutoFlash(false); if (onAutoComplete) onAutoComplete(); }, 1200);
   }
 
   function handleClear() {
