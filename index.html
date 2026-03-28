@@ -670,7 +670,7 @@ function ShiftManager() {
   const [selected, setSelected] = useState([]);
   const [confirmMultiDelete, setConfirmMultiDelete] = useState(false);
   const [slideDir, setSlideDir] = useState(null);
-  const countBtnLastTap = React.useRef(0);
+  const monthLabelLastTap = React.useRef(0);
   const [member, setMember]       = useState("成田");
   const [showMemberMenu, setShowMemberMenu] = useState(false);
   const [allShifts, setAllShifts] = useState({});
@@ -901,7 +901,20 @@ function ShiftManager() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <button onClick={prevMonth} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#111", padding: 4 }}><IconChevronL /></button>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 13, fontWeight: 400, letterSpacing: 2, textTransform: "uppercase" }}>{year} / {String(month).padStart(2,"0")}</span>
+              <span
+                onClick={() => {
+                  const now = Date.now();
+                  if (now - monthLabelLastTap.current < 300) {
+                    monthLabelLastTap.current = 0;
+                    setYear(todayY); setMonth(todayM);
+                    setView("calendar");
+                    openEdit(todayD);
+                  } else {
+                    monthLabelLastTap.current = now;
+                  }
+                }}
+                style={{ fontSize: 13, fontWeight: 400, letterSpacing: 2, textTransform: "uppercase", cursor: "pointer", userSelect: "none" }}
+              >{year} / {String(month).padStart(2,"0")}</span>
               {!isCurrentMonth && (
                 <button onClick={goToday} style={{
                   background: "none", border: "1px solid #ddd", padding: "2px 8px", cursor: "pointer",
@@ -1183,19 +1196,7 @@ function ShiftManager() {
 
       {/* Count フローティングボタン */}
       <button
-        onClick={() => {
-          const now = Date.now();
-          if (now - countBtnLastTap.current < 300) {
-            // ダブルタップ → 当日モーダル
-            countBtnLastTap.current = 0;
-            setYear(todayY); setMonth(todayM);
-            setView("calendar");
-            openEdit(todayD);
-          } else {
-            countBtnLastTap.current = now;
-            setView(view === "counter" ? "calendar" : "counter");
-          }
-        }}
+        onClick={() => setView(view === "counter" ? "calendar" : "counter")}
         style={{
           position: "fixed", bottom: 28, right: 20, width: 52, height: 52,
           borderRadius: "50%", border: "none", cursor: "pointer",
