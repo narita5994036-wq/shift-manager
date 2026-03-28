@@ -1,0 +1,36 @@
+name: Extract Shift PDF
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'shift_*.pdf'
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Extract shift data from PDFs
+        run: python3 scripts/extract_shifts.py
+
+      - name: Commit JSON files
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/shifts_*.json
+          if git diff --cached --quiet; then
+            echo "変更なし"
+          else
+            git commit -m "Auto: extract shift data from PDF"
+            git push
+          fi
