@@ -260,7 +260,6 @@ const storage = {
 };
 
 // ── SVG Icons ────────────────────────────────────────────────
-const IconCamera   = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>;
 const IconChevronL = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>;
 const IconChevronR = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
 const IconClose    = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>;
@@ -664,8 +663,6 @@ function ShiftManager() {
   const [editDay, setEditDay]     = useState(null);
   const [editData, setEditData]   = useState(null);
   const [loaded, setLoaded]       = useState(false);
-  const [showImport, setShowImport] = useState(false);
-  const [confirmPDFReset, setConfirmPDFReset] = useState(false);
   const [pdfLoadState, setPdfLoadState] = useState(null); // null | "loading" | "done" | "error"
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
@@ -754,30 +751,6 @@ function ShiftManager() {
       setPdfLoadState("error");
       setTimeout(() => setPdfLoadState(null), 3000);
     }
-  }
-
-  function resetToPDF() {
-    const pdfData = {
-      "成田": MARCH_2026_DATA,
-      "正田": MARCH_2026_MASADA,
-      "尾谷": MARCH_2026_OTANI,
-    };
-    // 全シフトデータをクリア
-    try {
-      Object.keys(localStorage).filter(k => k.startsWith('shifts:')).forEach(k => localStorage.removeItem(k));
-    } catch(e) {}
-    // 3月PDFデータをセット
-    MEMBERS.forEach(m => {
-      const d = pdfData[m];
-      if (d) storage.set(`shifts:${m}:2026-03`, JSON.stringify(d));
-    });
-    // 現在表示を更新
-    setShifts(pdfData[member] || {});
-    const all = {};
-    MEMBERS.forEach(m => { if (m !== member && pdfData[m]) all[m] = pdfData[m]; });
-    setAllShifts(all);
-    setYear(2026); setMonth(3);
-    setConfirmPDFReset(false);
   }
 
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -897,13 +870,6 @@ function ShiftManager() {
               })()}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
-              <button onClick={() => setShowImport(true)} className="icon-btn" style={{
-                display: "flex", alignItems: "center", gap: 6, background: "none",
-                border: "1px solid #111", padding: "6px 12px", cursor: "pointer",
-                fontSize: 10, letterSpacing: 1.5, textTransform: "uppercase", color: "#111"
-              }}>
-                <IconCamera /> Scan
-              </button>
               <button
                 onClick={() => loadPDFData(year, month)}
                 disabled={pdfLoadState === "loading"}
@@ -916,23 +882,6 @@ function ShiftManager() {
                 }}>
                 {pdfLoadState === "loading" ? "読込中..." : pdfLoadState === "done" ? "完了" : pdfLoadState === "error" ? "取得失敗" : "PDF読込"}
               </button>
-              {confirmPDFReset ? (
-                <div style={{ display: "flex", gap: 4 }}>
-                  <button onClick={() => setConfirmPDFReset(false)} style={{
-                    padding: "5px 8px", background: "none", border: "1px solid #ddd",
-                    cursor: "pointer", fontSize: 9, color: "#aaa"
-                  }}>Cancel</button>
-                  <button onClick={resetToPDF} style={{
-                    padding: "5px 8px", background: "#c0392b", border: "none",
-                    cursor: "pointer", fontSize: 9, color: "#fff", letterSpacing: 1
-                  }}>3月Reset</button>
-                </div>
-              ) : (
-                <button onClick={() => setConfirmPDFReset(true)} style={{
-                  background: "none", border: "1px solid #e0dedd", padding: "5px 10px",
-                  cursor: "pointer", fontSize: 9, letterSpacing: 1, color: "#ccc"
-                }}>3月Reset</button>
-              )}
               {member === "成田" && Object.values(shifts).some(s => s?.status === "出勤") && (
                 <button onClick={() => downloadICS(shifts, member, year, month)} className="icon-btn" style={{
                   display: "flex", alignItems: "center", gap: 6, background: "none",
@@ -1184,253 +1133,6 @@ function ShiftManager() {
         </div>
       )}
 
-      {showImport && <ImportModal onClose={() => setShowImport(false)} saveShifts={saveShifts} />}
-    </div>
-  );
-}
-
-// ── Import Modal ─────────────────────────────────────────────
-function ImportModal({ onClose, saveShifts }) {
-  const [tab, setTab] = useState("scan"); // "scan" | "json"
-  const [copied, setCopied] = useState(false);
-  const [jsonText, setJsonText] = useState("");
-  const [jsonError, setJsonError] = useState("");
-  const [jsonSuccess, setJsonSuccess] = useState(false);
-
-  const prompt = `シフト表のスクショを添付します。全員（成田・正田・尾谷・中谷）の列を読み取り、index.htmlのシフトデータを更新してGitHubへpushしてください。`;
-
-  const promptJson = `シフト表のスクショを添付します。全員（成田・正田・尾谷・中谷）の列を読み取って、全員分のシフトデータを以下のJSON形式で出力してください（コードブロック不要）:\n{"members":{"成田":{"shifts":{"2026-03-03":{"status":"出勤","startTime":"09:30","endTime":"18:30","breakTime":60,"memo":""}}},"正田":{"shifts":{}},"尾谷":{"shifts":{}},"中谷":{"shifts":{}}}}`;
-
-  const [copiedJson, setCopiedJson] = useState(false);
-
-  function copyPrompt() {
-    navigator.clipboard.writeText(prompt).catch(() => {}).finally(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
-  function copyPromptJson() {
-    navigator.clipboard.writeText(promptJson).catch(() => {}).finally(() => {
-      setCopiedJson(true);
-      setTimeout(() => setCopiedJson(false), 2000);
-    });
-  }
-
-  function applyJson() {
-    setJsonError("");
-    try {
-      const cleaned = jsonText.trim()
-        .replace(/^```[a-z]*\n?/i, '').replace(/\n?```$/i, '') // コードブロック除去
-        .replace(/[\u200B-\u200D\uFEFF\u00A0\u2028\u2029]/g, '')
-        .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
-        .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'")
-        .replace(/[\u2010-\u2015\u2212]/g, '-');
-      const data = JSON.parse(cleaned);
-
-      // 複数メンバー形式: { members: { 成田: { shifts: {...} }, ... } }
-      // 単一メンバー形式: { year, month, shifts: {...} }
-      if (data.members) {
-        // 日付ごとの出勤人数を集計してbreakTimeを設定（2人体勢=90分、3人以上=60分）
-        const dateCounts = {};
-        Object.values(data.members).forEach(md => {
-          if (!md.shifts) return;
-          Object.entries(md.shifts).forEach(([date, s]) => {
-            if (s.status === "出勤") dateCounts[date] = (dateCounts[date] || 0) + 1;
-          });
-        });
-        Object.values(data.members).forEach(md => {
-          if (!md.shifts) return;
-          Object.entries(md.shifts).forEach(([date, s]) => {
-            if (s.status === "出勤") {
-              const n = dateCounts[date] || 1;
-              s.breakTime = n === 2 ? 90 : 60;
-            }
-          });
-        });
-
-        let count = 0;
-        Object.entries(data.members).forEach(([name, memberData]) => {
-          if (!memberData.shifts) return;
-          const keys = Object.keys(memberData.shifts);
-          const groups = {};
-          keys.forEach(k => {
-            const [y, m] = k.split("-");
-            const gk = `${y}-${m}`;
-            if (!groups[gk]) groups[gk] = {};
-            groups[gk][k] = memberData.shifts[k];
-          });
-          Object.entries(groups).forEach(([ym, shifts]) => {
-            const storeKey = `shifts:${name}:${ym}`;
-            const existing = (() => { try { return storage.get(storeKey); } catch(e) { return null; } })();
-            const merged = existing ? { ...JSON.parse(existing), ...shifts } : shifts;
-            storage.set(storeKey, JSON.stringify(merged));
-            count++;
-          });
-        });
-        if (count === 0) throw new Error("有効なデータが見つかりません");
-      } else {
-        // 従来の単一形式
-        if (!data.shifts || typeof data.shifts !== "object") throw new Error("shiftsが見つかりません");
-        const keys = Object.keys(data.shifts);
-        if (keys.length === 0) throw new Error("シフトデータが空です");
-        const groups = {};
-        keys.forEach(k => {
-          const [y, m] = k.split("-");
-          const gk = `${y}-${m}`;
-          if (!groups[gk]) groups[gk] = {};
-          groups[gk][k] = data.shifts[k];
-        });
-        const targetMember = data.member || "成田";
-        Object.entries(groups).forEach(([ym, shifts]) => {
-          const storeKey = `shifts:${targetMember}:${ym}`;
-          const existing = (() => { try { return storage.get(storeKey); } catch(e) { return null; } })();
-          const merged = existing ? { ...JSON.parse(existing), ...shifts } : shifts;
-          storage.set(storeKey, JSON.stringify(merged));
-        });
-      }
-
-      setJsonSuccess(true);
-      setTimeout(() => { onClose(); window.location.reload(); }, 1200);
-    } catch(e) {
-      setJsonError(`エラー: ${e.message}`);
-    }
-  }
-
-  const tabBtn = (id, label) => (
-    <button onClick={() => setTab(id)} style={{
-      flex: 1, padding: "9px 0", background: "none", border: "none", cursor: "pointer",
-      fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
-      color: tab === id ? "#111" : "#bbb",
-      borderBottom: tab === id ? "1.5px solid #111" : "1.5px solid transparent",
-      transition: "all 0.2s"
-    }}>{label}</button>
-  );
-
-  return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200 }} onClick={onClose}>
-      <div style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 44px", maxHeight: "90vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-          <div>
-            <div style={{ fontSize: 9, letterSpacing: 4, color: "#aaa", textTransform: "uppercase", marginBottom: 4 }}>Import</div>
-            <div style={{ fontSize: 20, fontWeight: 300 }}>Shift Data</div>
-          </div>
-          <button onClick={onClose} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#111", padding: 4 }}><IconClose /></button>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ display: "flex", borderBottom: "1px solid #e0dedd", marginBottom: 24 }}>
-          {tabBtn("scan", "Scan")}
-          {tabBtn("json", "JSON")}
-        </div>
-
-        {/* Scan tab */}
-        {tab === "scan" && (
-          <>
-            <div style={{
-              padding: "14px 16px", marginBottom: 24,
-              background: "#f5f4f2", borderLeft: "2px solid #ddd"
-            }}>
-              <div style={{ fontSize: 11, color: "#777", lineHeight: 1.7, fontFamily: "monospace", marginBottom: 12, wordBreak: "break-all", whiteSpace: "pre-wrap" }}>{prompt}</div>
-              <button onClick={copyPrompt} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: copied ? "#111" : "none",
-                border: `1px solid ${copied ? "#111" : "#bbb"}`,
-                padding: "6px 14px", cursor: "pointer",
-                fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
-                color: copied ? "#fff" : "#888", transition: "all 0.2s"
-              }}>
-                {copied ? <><IconCheck /> Copied!</> : "Copy Prompt"}
-              </button>
-            </div>
-
-            {["スクショを撮る", "Open Claude をタップ", "画像を添付して送信", "自動でGitHubへ反映される"].map((s, i) => (
-              <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
-                <div style={{ fontSize: 10, letterSpacing: 1, color: "#bbb", minWidth: 20 }}>0{i+1}</div>
-                <div style={{ flex: 1, height: 1, background: "#e0dedd", marginTop: 8, maxWidth: 16 }} />
-                <div style={{ flex: 1, fontSize: 13, fontWeight: 300, color: i === 3 ? "#111" : "#444", lineHeight: 1.6 }}>{s}</div>
-              </div>
-            ))}
-
-            <a href="https://claude.ai/code/session_01FCPrwRvZGSGRp25Ra8KmBM" target="_blank" rel="noopener noreferrer" style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              width: "100%", marginTop: 8, marginBottom: 12, padding: "13px 0",
-              background: "#f5f4f2", color: "#111", textDecoration: "none",
-              fontSize: 10, letterSpacing: 3, textTransform: "uppercase",
-              border: "1px solid #e0dedd"
-            }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-              Open Claude
-            </a>
-
-            <button onClick={onClose} className="primary-btn" style={{
-              width: "100%", marginTop: 8, padding: "13px 0", background: "#111", color: "#fff",
-              border: "none", cursor: "pointer", fontSize: 10, letterSpacing: 3, textTransform: "uppercase"
-            }}>Close</button>
-          </>
-        )}
-
-        {/* JSON tab */}
-        {tab === "json" && (
-          <>
-            <div style={{
-              padding: "14px 16px", marginBottom: 16,
-              background: "#f5f4f2", borderLeft: "2px solid #ddd"
-            }}>
-              <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#bbb", marginBottom: 8 }}>Manual Prompt</div>
-              <div style={{ fontSize: 11, color: "#777", lineHeight: 1.7, fontFamily: "monospace", marginBottom: 12, wordBreak: "break-all", whiteSpace: "pre-wrap" }}>{promptJson}</div>
-              <button onClick={copyPromptJson} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: copiedJson ? "#111" : "none",
-                border: `1px solid ${copiedJson ? "#111" : "#bbb"}`,
-                padding: "6px 14px", cursor: "pointer",
-                fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
-                color: copiedJson ? "#fff" : "#888", transition: "all 0.2s"
-              }}>
-                {copiedJson ? <><IconCheck /> Copied!</> : "Copy Prompt"}
-              </button>
-            </div>
-
-            {["スクショを撮る", "Claudeのチャット画面へ移動", "画像を添付 → プロンプトを貼り付けて送信", "返ってきたJSONをコピー → 下に貼って Apply"].map((s, i) => (
-              <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start", marginBottom: 14 }}>
-                <div style={{ fontSize: 10, letterSpacing: 1, color: "#bbb", minWidth: 20 }}>0{i+1}</div>
-                <div style={{ flex: 1, height: 1, background: "#e0dedd", marginTop: 8, maxWidth: 16 }} />
-                <div style={{ flex: 1, fontSize: 13, fontWeight: 300, color: i === 3 ? "#111" : "#444", lineHeight: 1.6 }}>{s}</div>
-              </div>
-            ))}
-
-            <div style={{ fontSize: 12, color: "#aaa", marginBottom: 12, marginTop: 4, lineHeight: 1.7 }}>
-              ClaudeのチャットからコピーしたJSONを貼り付けてくださいな。
-            </div>
-            <textarea
-              value={jsonText}
-              onChange={e => { setJsonText(e.target.value); setJsonError(""); setJsonSuccess(false); }}
-              placeholder={'{"year":2026,"month":3,"shifts":{...}}'}
-              rows={8}
-              style={{
-                width: "100%", padding: "12px", border: "1px solid #e0dedd",
-                fontSize: 11, fontFamily: "monospace", resize: "none", background: "#fafaf9",
-                outline: "none", lineHeight: 1.6, color: "#333", marginBottom: 12
-              }}
-            />
-            {jsonError && (
-              <div style={{ fontSize: 11, color: "#c0392b", marginBottom: 12, padding: "8px 12px", background: "#fff5f5", borderLeft: "2px solid #c0392b" }}>{jsonError}</div>
-            )}
-            {jsonSuccess && (
-              <div style={{ fontSize: 11, color: "#2a7a2a", marginBottom: 12, padding: "8px 12px", background: "#f5fff5", borderLeft: "2px solid #2a7a2a", display: "flex", alignItems: "center", gap: 6 }}>
-                <IconCheck /> インポート完了！再読み込みしますわ…
-              </div>
-            )}
-            <button onClick={applyJson} className="primary-btn" style={{
-              width: "100%", padding: "13px 0", background: jsonText.trim() ? "#111" : "#e0dedd",
-              color: "#fff", border: "none", cursor: jsonText.trim() ? "pointer" : "default",
-              fontSize: 10, letterSpacing: 3, textTransform: "uppercase"
-            }}>Apply</button>
-          </>
-        )}
-      </div>
     </div>
   );
 }
