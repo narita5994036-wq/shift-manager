@@ -1,0 +1,659 @@
+{
+  "尾谷": {
+    "2026-03-01": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-02": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-03": {
+      "status": "出勤",
+      "startTime": "09:48",
+      "endTime": "19:02",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-04": {
+      "status": "出勤",
+      "startTime": "09:55",
+      "endTime": "19:55",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-05": {
+      "status": "出勤",
+      "startTime": "09:12",
+      "endTime": "20:25",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-06": {
+      "status": "出勤",
+      "startTime": "09:10",
+      "endTime": "15:13",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-07": {
+      "status": "出勤",
+      "startTime": "09:10",
+      "endTime": "19:34",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-08": {
+      "status": "出勤",
+      "startTime": "09:10",
+      "endTime": "20:26",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-09": {
+      "status": "出勤",
+      "startTime": "13:48",
+      "endTime": "21:25",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-10": {
+      "status": "出勤",
+      "startTime": "15:43",
+      "endTime": "20:57",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-11": {
+      "status": "出勤",
+      "startTime": "11:50",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-12": {
+      "status": "出勤",
+      "startTime": "10:51",
+      "endTime": "21:12",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-13": {
+      "status": "出勤",
+      "startTime": "14:47",
+      "endTime": "21:33",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-14": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-15": {
+      "status": "出勤",
+      "startTime": "11:15",
+      "endTime": "20:49",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-16": {
+      "status": "出勤",
+      "startTime": "10:21",
+      "endTime": "19:33",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-17": {
+      "status": "出勤",
+      "startTime": "10:18",
+      "endTime": "19:34",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-18": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-19": {
+      "status": "出勤",
+      "startTime": "09:22",
+      "endTime": "19:32",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-20": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-21": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-22": {
+      "status": "出勤",
+      "startTime": "16:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-23": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-24": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-25": {
+      "status": "出勤",
+      "startTime": "10:30",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-26": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-27": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-28": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-29": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-30": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-31": {
+      "status": "出勤",
+      "startTime": "10:30",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": ""
+    }
+  },
+  "正田": {
+    "2026-03-01": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-02": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-03": {
+      "status": "出勤",
+      "startTime": "09:50",
+      "endTime": "21:07",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-04": {
+      "status": "出勤",
+      "startTime": "09:56",
+      "endTime": "19:56",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-05": {
+      "status": "出勤",
+      "startTime": "09:12",
+      "endTime": "20:49",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-06": {
+      "status": "出勤",
+      "startTime": "09:57",
+      "endTime": "20:34",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-07": {
+      "status": "出勤",
+      "startTime": "10:57",
+      "endTime": "20:47",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-08": {
+      "status": "出勤",
+      "startTime": "11:26",
+      "endTime": "20:45",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-09": {
+      "status": "出勤",
+      "startTime": "09:27",
+      "endTime": "15:34",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-10": {
+      "status": "出勤",
+      "startTime": "09:59",
+      "endTime": "19:59",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-11": {
+      "status": "出勤",
+      "startTime": "09:28",
+      "endTime": "16:14",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-12": {
+      "status": "出勤",
+      "startTime": "09:26",
+      "endTime": "12:29",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-13": {
+      "status": "出勤",
+      "startTime": "05:59",
+      "endTime": "16:39",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-14": {
+      "status": "出勤",
+      "startTime": "10:28",
+      "endTime": "20:15",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-15": {
+      "status": "出勤",
+      "startTime": "10:28",
+      "endTime": "20:22",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-16": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-17": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-18": {
+      "status": "出勤",
+      "startTime": "10:29",
+      "endTime": "19:31",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-19": {
+      "status": "出勤",
+      "startTime": "10:56",
+      "endTime": "20:36",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-20": {
+      "status": "出勤",
+      "startTime": "10:28",
+      "endTime": "20:31",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-21": {
+      "status": "出勤",
+      "startTime": "10:30",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-22": {
+      "status": "出勤",
+      "startTime": "10:30",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-23": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-24": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-25": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-26": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-27": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-28": {
+      "status": "出勤",
+      "startTime": "10:30",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-29": {
+      "status": "出勤",
+      "startTime": "10:30",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-30": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-31": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    }
+  },
+  "成田": {
+    "2026-03-01": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-02": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-03": {
+      "status": "出勤",
+      "startTime": "10:00",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-04": {
+      "status": "出勤",
+      "startTime": "10:00",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-05": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-06": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-07": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-08": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-09": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-10": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-11": {
+      "status": "出勤",
+      "startTime": "13:37",
+      "endTime": "19:06",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-12": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-13": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-14": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-15": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-16": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-17": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-18": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-19": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-20": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-21": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-22": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-23": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-24": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-25": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-26": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-27": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-28": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-29": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-30": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-03-31": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    }
+  }
+}

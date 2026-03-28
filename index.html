@@ -666,6 +666,7 @@ function ShiftManager() {
   const [loaded, setLoaded]       = useState(false);
   const [showImport, setShowImport] = useState(false);
   const [confirmPDFReset, setConfirmPDFReset] = useState(false);
+  const [pdfLoadState, setPdfLoadState] = useState(null); // null | "loading" | "done" | "error"
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState([]);
@@ -725,6 +726,35 @@ function ShiftManager() {
     setShifts(s);
     storage.set(storageKey, JSON.stringify(s));
   }, [storageKey]);
+
+  async function loadPDFData(y, m) {
+    setPdfLoadState("loading");
+    const url = `https://raw.githubusercontent.com/narita5994036-wq/shift-manager/main/data/shifts_${y}-${String(m).padStart(2,"0")}.json`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const pdfData = await res.json();
+      // 対象月の全メンバーをクリアしてから書き込み
+      const ym = `${y}-${String(m).padStart(2,"0")}`;
+      MEMBERS.forEach(mem => {
+        try { localStorage.removeItem(`shifts:${mem}:${ym}`); } catch {}
+      });
+      MEMBERS.forEach(mem => {
+        if (pdfData[mem]) storage.set(`shifts:${mem}:${ym}`, JSON.stringify(pdfData[mem]));
+      });
+      setShifts(pdfData[member] || {});
+      const all = {};
+      MEMBERS.forEach(mem => { if (mem !== member && pdfData[mem]) all[mem] = pdfData[mem]; });
+      setAllShifts(all);
+      setYear(y); setMonth(m);
+      setPdfLoadState("done");
+      setTimeout(() => setPdfLoadState(null), 2000);
+    } catch(e) {
+      console.error(e);
+      setPdfLoadState("error");
+      setTimeout(() => setPdfLoadState(null), 3000);
+    }
+  }
 
   function resetToPDF() {
     const pdfData = {
@@ -874,6 +904,18 @@ function ShiftManager() {
               }}>
                 <IconCamera /> Scan
               </button>
+              <button
+                onClick={() => loadPDFData(year, month)}
+                disabled={pdfLoadState === "loading"}
+                style={{
+                  background: pdfLoadState === "done" ? "#2d6a4f" : pdfLoadState === "error" ? "#c0392b" : "none",
+                  border: `1px solid ${pdfLoadState === "done" ? "#2d6a4f" : pdfLoadState === "error" ? "#c0392b" : "#888"}`,
+                  padding: "5px 10px", cursor: "pointer", fontSize: 9, letterSpacing: 1,
+                  color: pdfLoadState ? "#fff" : "#888",
+                  transition: "all 0.3s"
+                }}>
+                {pdfLoadState === "loading" ? "読込中..." : pdfLoadState === "done" ? "完了" : pdfLoadState === "error" ? "取得失敗" : "PDF読込"}
+              </button>
               {confirmPDFReset ? (
                 <div style={{ display: "flex", gap: 4 }}>
                   <button onClick={() => setConfirmPDFReset(false)} style={{
@@ -883,13 +925,13 @@ function ShiftManager() {
                   <button onClick={resetToPDF} style={{
                     padding: "5px 8px", background: "#c0392b", border: "none",
                     cursor: "pointer", fontSize: 9, color: "#fff", letterSpacing: 1
-                  }}>実行</button>
+                  }}>3月Reset</button>
                 </div>
               ) : (
                 <button onClick={() => setConfirmPDFReset(true)} style={{
                   background: "none", border: "1px solid #e0dedd", padding: "5px 10px",
-                  cursor: "pointer", fontSize: 9, letterSpacing: 1, color: "#bbb"
-                }}>PDF Reset</button>
+                  cursor: "pointer", fontSize: 9, letterSpacing: 1, color: "#ccc"
+                }}>3月Reset</button>
               )}
               {member === "成田" && Object.values(shifts).some(s => s?.status === "出勤") && (
                 <button onClick={() => downloadICS(shifts, member, year, month)} className="icon-btn" style={{
