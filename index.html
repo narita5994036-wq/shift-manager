@@ -1499,7 +1499,7 @@ const DRAFT_H_PER_DAY = 8;   // 9時間 − 1時間休憩
 const DRAFT_MAX_H     = 190; // 残業10h上限
 
 // ── Auto-schedule algorithm ───────────────────────────────────
-function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsecutive) {
+function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsecutive, ratios = {}) {
   const dim = new Date(year, month, 0).getDate();
   const targetDays = Math.round(targetHours / DRAFT_H_PER_DAY);
   const busySet = new Set(busyDays || []);
@@ -1525,9 +1525,18 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
   };
   const typeCnt = {};
   MEMBERS.forEach(m => { typeCnt[m] = { "早": 0, "中": 0, "遅": 0 }; });
+
+  // 比率を考慮したdeficit計算: target比率 - 実績比率 が最大の番種を優先
+  const typeDeficit = (m, t) => {
+    const r = ratios[m] || {};
+    const w = t => r[t] ?? 3;
+    const totalW = TYPES.reduce((s, x) => s + w(x), 0);
+    const totalT = TYPES.reduce((s, x) => s + typeCnt[m][x], 0) || 1;
+    return w(t) / totalW - typeCnt[m][t] / totalT;
+  };
   const bestType = (m, exclude = []) => {
     const avail = TYPES.filter(t => !exclude.includes(t));
-    return avail.sort((a, b) => typeCnt[m][a] - typeCnt[m][b])[0] || "早";
+    return avail.sort((a, b) => typeDeficit(m, b) - typeDeficit(m, a))[0] || "早";
   };
 
   // Phase 1: 繁忙日 → 3〜4人出勤(希望休以外は全員)
@@ -1651,8 +1660,8 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
     const workers = MEMBERS.filter(m => work[m][d] === true);
     const usedTypes = [];
 
-    // 早番をまず「早番の累計が最少のメンバー」に割り当て
-    const byEarlyCount = [...workers].sort((a, b) => typeCnt[a]["早"] - typeCnt[b]["早"]);
+    // 早番をまず「早番のdeficitが最大のメンバー」に割り当て(比率考慮)
+    const byEarlyCount = [...workers].sort((a, b) => typeDeficit(b, "早") - typeDeficit(a, "早"));
     const earlyWorker = byEarlyCount[0];
     if (earlyWorker) {
       res[earlyWorker][d] = "早";
@@ -1706,7 +1715,7 @@ function DraftView({ year, month }) {
 
   function handleAuto() {
     const newAssign = buildAutoSchedule(
-      year, month, draft.requestedOff, draft.busyDays, targetH, maxCons
+      year, month, draft.requestedOff, draft.busyDays, targetH, maxCons, draft.ratios || {}
     );
     save({ ...draft, assignments: newAssign });
     setAutoFlash(true);
@@ -1810,7 +1819,7 @@ function DraftView({ year, month }) {
 
       {/* mode toggle */}
       <div style={{ display: "flex", borderBottom: "1px solid #e0dedd", position: "sticky", top: 0, zIndex: 10, background: "#fff" }}>
-        {[["assign", "シフト組み"], ["request", "希望休設定"]].map(([id, lbl]) => (
+        {[["assign", "シフト組み"], ["request", "希望休設定"], ["ratio", "比率設定"]].map(([id, lbl]) => (
           <button key={id} onClick={() => setMode(id)} style={{
             flex: 1, padding: "9px 0", background: "none", border: "none", cursor: "pointer",
             fontSize: 9, letterSpacing: 2,
@@ -1843,6 +1852,50 @@ function DraftView({ year, month }) {
               {a.t === "w" ? "⚠ " : "· "}{a.msg}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── 比率設定パネル ── */}
+      {mode === "ratio" && (
+        <div style={{ padding: "16px 14px 8px", borderBottom: "1px solid #e0dedd" }}>
+          {MEMBERS.map(m => {
+            const getRatio = t => draft.ratios?.[m]?.[t] ?? 3;
+            const setRatio = (t, lv) => {
+              save({ ...draft, ratios: { ...draft.ratios, [m]: { ...(draft.ratios?.[m] || {}), [t]: lv } } });
+            };
+            return (
+              <div key={m} style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 11, fontWeight: 500, color: "#333", marginBottom: 8, letterSpacing: 1 }}>{m}</div>
+                {["早", "中", "遅"].map(t => {
+                  const col = DRAFT_COLORS[t];
+                  const val = getRatio(t);
+                  const labels = ["最少", "少", "普通", "多", "最多"];
+                  return (
+                    <div key={t} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 7 }}>
+                      <span style={{ fontSize: 10, fontWeight: 500, color: col.text, width: 18 }}>{t}</span>
+                      <div style={{ display: "flex", gap: 2, flex: 1 }}>
+                        {[1, 2, 3, 4, 5].map(lv => (
+                          <button key={lv} onClick={() => setRatio(t, lv)} style={{
+                            flex: 1, height: 22, border: "none", cursor: "pointer",
+                            background: lv <= val ? col.bg : "#f0eeec",
+                            borderTop: `2px solid ${lv <= val ? col.text : "#ddd"}`,
+                            borderBottom: `2px solid ${lv <= val ? col.text : "#ddd"}`,
+                            borderLeft: lv === 1 ? `2px solid ${lv <= val ? col.text : "#ddd"}` : "1px solid transparent",
+                            borderRight: lv === 5 ? `2px solid ${lv <= val ? col.text : "#ddd"}` : "1px solid transparent",
+                            transition: "all 0.1s"
+                          }} />
+                        ))}
+                      </div>
+                      <span style={{ fontSize: 9, color: "#aaa", width: 28, textAlign: "right" }}>{labels[val - 1]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+          <div style={{ fontSize: 9, color: "#bbb", lineHeight: 1.8, marginTop: 4 }}>
+            比率はAutoボタン実行時に番種の割り当てへ反映されます
+          </div>
         </div>
       )}
 
