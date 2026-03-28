@@ -1030,7 +1030,7 @@ function ShiftManager() {
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 100 }}
           onClick={() => { setEditDay(null); setConfirmDelete(false); }}>
           <div
-            style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 40px", touchAction: "pan-y" }}
+            style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 40px", touchAction: "pan-y", minHeight: "70vh", overflowY: "auto" }}
             onClick={e => e.stopPropagation()}
             onTouchStart={e => { modalSwipeX.current = e.touches[0].clientX; }}
             onTouchEnd={e => {
