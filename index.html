@@ -1609,6 +1609,7 @@ function DraftView({ year, month }) {
       mergedCustom[m] = { ...(mergedCustom[m] || {}), ...days };
     });
     save({ ...draft, assignments: newAssign, customTimes: mergedCustom });
+    setMode("assign");
     setAutoFlash(true);
     setTimeout(() => setAutoFlash(false), 1200);
   }
