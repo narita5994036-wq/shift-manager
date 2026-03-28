@@ -1527,6 +1527,7 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
   MEMBERS.forEach(m => { typeCnt[m] = { "早": 0, "中": 0, "遅": 0 }; });
 
   // 比率を考慮したdeficit計算: target比率 - 実績比率 が最大の番種を優先
+  const isBlocked  = (m, t) => (ratios[m]?.[t] ?? 3) === 0; // 比率0 = 絶対割り当て不可
   const typeDeficit = (m, t) => {
     const r = ratios[m] || {};
     const w = t => r[t] ?? 3;
@@ -1535,8 +1536,11 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
     return w(t) / totalW - typeCnt[m][t] / totalT;
   };
   const bestType = (m, exclude = []) => {
+    // まず比率0以外から選ぶ、全て0(またはexclude済み)の場合はexcludeのみで再選択(カバレッジ優先)
     const avail = TYPES.filter(t => !exclude.includes(t));
-    return avail.sort((a, b) => typeDeficit(m, b) - typeDeficit(m, a))[0] || "早";
+    const allowed = avail.filter(t => !isBlocked(m, t));
+    const pool = allowed.length > 0 ? allowed : avail;
+    return pool.sort((a, b) => typeDeficit(m, b) - typeDeficit(m, a))[0] || "早";
   };
 
   // Phase 1: 繁忙日 → 3〜4人出勤(希望休以外は全員)
@@ -1664,9 +1668,14 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
     const workers = MEMBERS.filter(m => work[m][d] === true);
     const usedTypes = [];
 
-    // 早番をまず「早番のdeficitが最大のメンバー」に割り当て(比率考慮)
-    const byEarlyCount = [...workers].sort((a, b) => typeDeficit(b, "早") - typeDeficit(a, "早"));
-    const earlyWorker = byEarlyCount[0];
+    // 早番をまず「早番のdeficitが最大 かつ 比率0でない」メンバーに割り当て
+    // 比率0でないメンバーがいなければ全員を候補にする(カバレッジ優先)
+    const sortedByEarlyDeficit = [...workers].sort((a, b) => typeDeficit(b, "早") - typeDeficit(a, "早"));
+    const earlyEligible = sortedByEarlyDeficit.filter(m => !isBlocked(m, "早"));
+    const byEarlyCount  = earlyEligible.length > 0 ? earlyEligible : sortedByEarlyDeficit;
+    // 早番担当以外の並び順(earlyWorker を先頭から除いた残り)
+    const earlyWorker   = byEarlyCount[0];
+    const restWorkers   = sortedByEarlyDeficit.filter(m => m !== earlyWorker);
     if (earlyWorker) {
       res[earlyWorker][d] = "早";
       typeCnt[earlyWorker]["早"]++;
@@ -1676,9 +1685,11 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
     const isTwoPerson = workers.length === 2;
 
     // 残りのメンバーは早番を除いた中でbestTypeを割り当て(重複なし)
-    // 2人体制の日は遅番固定
-    for (const m of byEarlyCount.slice(1)) {
-      const t = isTwoPerson ? "遅" : bestType(m, usedTypes); // 使用済み番種を除外
+    // 2人体制の日は遅番優先(比率0なら次善の番種)
+    for (const m of restWorkers) {
+      const t = isTwoPerson
+        ? (!isBlocked(m, "遅") ? "遅" : bestType(m, usedTypes))
+        : bestType(m, usedTypes);
       res[m][d] = t;
       typeCnt[m][t]++;
       usedTypes.push(t);
