@@ -1490,10 +1490,10 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
 // ── Draft View (翌月シフト仮組み) ────────────────────────────
 const DRAFT_TYPES  = [null, "早", "中", "遅", "休"];
 const DRAFT_COLORS = {
-  "早": { bg: "#fffbee", text: "#c9a84c" },
-  "中": { bg: "#eef6ff", text: "#4c7ab5" },
-  "遅": { bg: "#efffef", text: "#2d6a4f" },
-  "休": { bg: "#f5f4f2", text: "#bbb"    },
+  "早": { bg: "#fffbee", text: "#c9a84c", time: "9:30-18:30" },
+  "中": { bg: "#eef6ff", text: "#4c7ab5", time: "10:30-19:30" },
+  "遅": { bg: "#efffef", text: "#2d6a4f", time: "11:30-20:30" },
+  "休": { bg: "#f5f4f2", text: "#bbb",    time: "" },
 };
 const DRAFT_H_PER_DAY = 8;   // 9時間 − 1時間休憩
 const DRAFT_MAX_H     = 190; // 残業10h上限
@@ -1956,10 +1956,14 @@ function DraftView({ year, month }) {
                 <button key={m} onClick={() => cycleShift(m, day)} style={{
                   border: "none", borderLeft: "1px solid #f5f4f2", minHeight: 44,
                   background: st ? col.bg : isReq ? "#fff5f5" : "#fff",
-                  cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center"
+                  cursor: "pointer", display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 1, padding: "4px 2px"
                 }}>
                   {st
-                    ? <span style={{ fontSize: 11, fontWeight: 500, color: col.text }}>{st}</span>
+                    ? <>
+                        <span style={{ fontSize: 11, fontWeight: 500, color: col.text, lineHeight: 1 }}>{st}</span>
+                        {col.time && <span style={{ fontSize: 7, color: col.text, opacity: 0.7, letterSpacing: 0, lineHeight: 1 }}>{col.time}</span>}
+                      </>
                     : <span style={{ fontSize: isReq ? 8 : 10, color: isReq ? "#e8a0a0" : "#ddd" }}>{isReq ? "希" : "—"}</span>
                   }
                 </button>
