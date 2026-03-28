@@ -1020,12 +1020,32 @@ function ShiftManager() {
           <div style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 40px" }} onClick={e => e.stopPropagation()}>
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-              <div>
-                <div style={{ fontSize: 9, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 4 }}>{year} / {String(month).padStart(2,"0")}</div>
-                <div style={{ fontSize: 24, fontWeight: 300, letterSpacing: 0.5, display: "flex", alignItems: "baseline", gap: 8 }}>
-                  {editDay}
-                  <span style={{ fontSize: 13, fontWeight: 300, color: "#aaa", letterSpacing: 1 }}>{WEEKDAY_JP[new Date(year, month - 1, editDay).getDay()]}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <button onClick={() => {
+                  const d = new Date(year, month - 1, editDay - 1);
+                  const ny = d.getFullYear(), nm = d.getMonth() + 1, nd = d.getDate();
+                  const k = dateKey(ny, nm, nd);
+                  const src = (ny === year && nm === month) ? shifts : (() => { try { const r = storage.get(`shifts:${member}:${ny}-${String(nm).padStart(2,"0")}`); return r ? JSON.parse(r) : {}; } catch { return {}; } })();
+                  setYear(ny); setMonth(nm); setEditDay(nd);
+                  setEditData(src[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
+                  setConfirmDelete(false);
+                }} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#111", padding: 4 }}><IconChevronL /></button>
+                <div>
+                  <div style={{ fontSize: 9, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 4 }}>{year} / {String(month).padStart(2,"0")}</div>
+                  <div style={{ fontSize: 24, fontWeight: 300, letterSpacing: 0.5, display: "flex", alignItems: "baseline", gap: 8 }}>
+                    {editDay}
+                    <span style={{ fontSize: 13, fontWeight: 300, color: "#aaa", letterSpacing: 1 }}>{WEEKDAY_JP[new Date(year, month - 1, editDay).getDay()]}</span>
+                  </div>
                 </div>
+                <button onClick={() => {
+                  const d = new Date(year, month - 1, editDay + 1);
+                  const ny = d.getFullYear(), nm = d.getMonth() + 1, nd = d.getDate();
+                  const k = dateKey(ny, nm, nd);
+                  const src = (ny === year && nm === month) ? shifts : (() => { try { const r = storage.get(`shifts:${member}:${ny}-${String(nm).padStart(2,"0")}`); return r ? JSON.parse(r) : {}; } catch { return {}; } })();
+                  setYear(ny); setMonth(nm); setEditDay(nd);
+                  setEditData(src[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
+                  setConfirmDelete(false);
+                }} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#111", padding: 4 }}><IconChevronR /></button>
               </div>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 {!confirmDelete && (
