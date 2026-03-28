@@ -670,6 +670,7 @@ function ShiftManager() {
   const [selected, setSelected] = useState([]);
   const [confirmMultiDelete, setConfirmMultiDelete] = useState(false);
   const [slideDir, setSlideDir] = useState(null);
+  const countBtnLastTap = React.useRef(0);
   const [member, setMember]       = useState("成田");
   const [showMemberMenu, setShowMemberMenu] = useState(false);
   const [allShifts, setAllShifts] = useState({});
@@ -1182,7 +1183,19 @@ function ShiftManager() {
 
       {/* Count フローティングボタン */}
       <button
-        onClick={() => setView(view === "counter" ? "calendar" : "counter")}
+        onClick={() => {
+          const now = Date.now();
+          if (now - countBtnLastTap.current < 300) {
+            // ダブルタップ → 当日モーダル
+            countBtnLastTap.current = 0;
+            setYear(todayY); setMonth(todayM);
+            setView("calendar");
+            openEdit(todayD);
+          } else {
+            countBtnLastTap.current = now;
+            setView(view === "counter" ? "calendar" : "counter");
+          }
+        }}
         style={{
           position: "fixed", bottom: 28, right: 20, width: 52, height: 52,
           borderRadius: "50%", border: "none", cursor: "pointer",
