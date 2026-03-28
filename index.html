@@ -1654,7 +1654,11 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
   // Phase 5: 番種(早/中/遅)を割り当て
   //  ・各日で必ず早番を1人入れる
   //  ・同日に同じ番種が重複しない
+  //  ・2人体制の日は早番+遅番の組み合わせ固定
   const res = {};
+  const customTimes = {}; // { [m]: { [d]: { start, end } } }
+  // 2人体制時の特別時刻(休憩1.5h込み)
+  const TWO_TIMES = { "早": { start: 9*60+30, end: 19*60 }, "遅": { start: 11*60, end: 20*60+30 } };
   MEMBERS.forEach(m => { res[m] = {}; });
   for (let d = 1; d <= dim; d++) {
     const workers = MEMBERS.filter(m => work[m][d] === true);
@@ -1669,18 +1673,32 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
       usedTypes.push("早");
     }
 
+    const isTwoPerson = workers.length === 2;
+
     // 残りのメンバーは早番を除いた中でbestTypeを割り当て(重複なし)
+    // 2人体制の日は遅番固定
     for (const m of byEarlyCount.slice(1)) {
-      const t = bestType(m, usedTypes); // 使用済み番種を除外
+      const t = isTwoPerson ? "遅" : bestType(m, usedTypes); // 使用済み番種を除外
       res[m][d] = t;
       typeCnt[m][t]++;
       usedTypes.push(t);
     }
 
+    // 2人体制の日: 特別時刻をcustomTimesに記録
+    if (isTwoPerson) {
+      workers.forEach(m => {
+        const type = res[m][d];
+        if (TWO_TIMES[type]) {
+          if (!customTimes[m]) customTimes[m] = {};
+          customTimes[m][d] = { ...TWO_TIMES[type] };
+        }
+      });
+    }
+
     MEMBERS.filter(m => work[m][d] !== true).forEach(m => { res[m][d] = "休"; });
   }
 
-  return res;
+  return { assignments: res, customTimes };
 }
 
 // 週休2日ベースで月の目標時間を計算(平日数 × 8h)
@@ -1694,6 +1712,15 @@ function calcMonthlyTargetHours(year, month) {
   return weekdays * 8;
 }
 
+// 番種ごとのデフォルト時刻(分換算)
+const DRAFT_TIMES = {
+  "早": { start: 9*60+30,  end: 18*60+30 },
+  "中": { start: 10*60+30, end: 19*60+30 },
+  "遅": { start: 11*60+30, end: 20*60+30 },
+};
+const minsToTime = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${m%60===0?'00':'30'}`;
+const timeToMins = t => { const [h,mm] = t.split(':').map(Number); return h*60+mm; };
+
 function DraftView({ year, month }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const sk = `draft:${year}-${String(month).padStart(2, "0")}`;
@@ -1702,11 +1729,12 @@ function DraftView({ year, month }) {
     try { const r = storage.get(sk); return r ? JSON.parse(r) : { assignments: {}, busyDays: [], requestedOff: {} }; }
     catch { return { assignments: {}, busyDays: [], requestedOff: {} }; }
   });
-  const [mode, setMode]       = useState("assign"); // "assign" | "request"
+  const [mode, setMode]       = useState("assign"); // "assign" | "request" | "ratio"
   const [targetH, setTargetH] = useState(() => calcMonthlyTargetHours(year, month));
   const [maxCons, setMaxCons] = useState(5);
   const defaultTargetH = calcMonthlyTargetHours(year, month);
   const [autoFlash, setAutoFlash] = useState(false);
+  const [editCell, setEditCell] = useState(null); // { m, day, startMins, endMins }
 
   function save(next) {
     setDraft(next);
@@ -1714,10 +1742,15 @@ function DraftView({ year, month }) {
   }
 
   function handleAuto() {
-    const newAssign = buildAutoSchedule(
+    const { assignments: newAssign, customTimes: newCustomTimes } = buildAutoSchedule(
       year, month, draft.requestedOff, draft.busyDays, targetH, maxCons, draft.ratios || {}
     );
-    save({ ...draft, assignments: newAssign });
+    // Merge auto-generated customTimes with existing ones (auto only writes 2-person days)
+    const mergedCustom = { ...(draft.customTimes || {}) };
+    Object.entries(newCustomTimes).forEach(([m, days]) => {
+      mergedCustom[m] = { ...(mergedCustom[m] || {}), ...days };
+    });
+    save({ ...draft, assignments: newAssign, customTimes: mergedCustom });
     setAutoFlash(true);
     setTimeout(() => setAutoFlash(false), 1200);
   }
@@ -1771,13 +1804,15 @@ function DraftView({ year, month }) {
       alerts.push({ t: "w", msg: `${month}/${d}: 早番なし` });
   }
 
-  const numInput = (val, set, min, max, label) => (
-    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-      <span style={{ fontSize: 9, color: "#aaa", letterSpacing: 1 }}>{label}</span>
-      <input type="number" value={val} min={min} max={max}
-        onChange={e => set(Math.min(max, Math.max(min, Number(e.target.value))))}
-        style={{ width: 40, padding: "3px 6px", border: "1px solid #e0dedd", fontSize: 12,
-          textAlign: "center", background: "#fafaf9", outline: "none" }} />
+  const rangeRow = (label, val, set, min, max, step, display, extra) => (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+        <span style={{ fontSize: 9, color: "#aaa", letterSpacing: 1 }}>{label}</span>
+        <span style={{ fontSize: 11, color: "#111" }}>{display(val)}{extra}</span>
+      </div>
+      <input type="range" value={val} min={min} max={max} step={step}
+        onChange={e => set(Number(e.target.value))}
+        style={{ width: "100%", accentColor: "#111", height: 20 }} />
     </div>
   );
 
@@ -1786,21 +1821,17 @@ function DraftView({ year, month }) {
       {/* ── Auto controls ── */}
       <div style={{ padding: "10px 14px", borderBottom: "1px solid #e0dedd", background: "#fafaf9" }}>
         {/* Settings row */}
-        <div style={{ display: "flex", gap: 16, marginBottom: 6, flexWrap: "wrap", alignItems: "center" }}>
-          {numInput(targetH, setTargetH, 140, 220, "目標")}
-          <span style={{ fontSize: 9, color: "#ccc", alignSelf: "center" }}>h</span>
-          {targetH !== defaultTargetH && (
-            <button onClick={() => setTargetH(defaultTargetH)} style={{
-              background: "none", border: "1px solid #e0dedd", padding: "3px 8px",
-              fontSize: 9, color: "#aaa", cursor: "pointer", letterSpacing: 1
-            }}>週休2日に戻す</button>
-          )}
-          {numInput(maxCons, setMaxCons, 3, 7, "連勤上限")}
-          <span style={{ fontSize: 9, color: "#ccc", alignSelf: "center" }}>日</span>
-        </div>
-        <div style={{ fontSize: 9, color: "#bbb", marginBottom: 10, letterSpacing: 0.5 }}>
-          週休2日ベース: {defaultTargetH / 8}日 × 8h = {defaultTargetH}h
-        </div>
+        {rangeRow("目標時間", targetH, setTargetH, 140, 220, 1, v => `${v}h`,
+          targetH !== defaultTargetH
+            ? <button onClick={() => setTargetH(defaultTargetH)} style={{
+                background: "none", border: "none", padding: "0 0 0 8px",
+                fontSize: 9, color: "#bbb", cursor: "pointer", textDecoration: "underline"
+              }}>週休2日({defaultTargetH}h)</button>
+            : <span style={{ fontSize: 9, color: "#bbb", marginLeft: 6 }}>
+                ({defaultTargetH/8}日×8h)
+              </span>
+        )}
+        {rangeRow("連続出勤上限", maxCons, setMaxCons, 3, 7, 1, v => `${v}日`, "")}
         {/* Action buttons */}
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={handleAuto} style={{
@@ -1949,20 +1980,39 @@ function DraftView({ year, month }) {
                   </button>
                 );
               }
-              const st   = draft.assignments[m]?.[day] ?? null;
+              const st    = draft.assignments[m]?.[day] ?? null;
               const isReq = (draft.requestedOff[m] || []).includes(day);
-              const col  = DRAFT_COLORS[st];
+              const col   = DRAFT_COLORS[st];
+              // カスタム時刻 or デフォルト
+              const custom = draft.customTimes?.[m]?.[day];
+              const defT   = DRAFT_TIMES[st];
+              const startM = custom?.start ?? defT?.start;
+              const endM   = custom?.end   ?? defT?.end;
+              const timeStr = startM != null ? `${minsToTime(startM)}-${minsToTime(endM)}` : "";
+              const isEditing = editCell?.m === m && editCell?.day === day;
               return (
-                <button key={m} onClick={() => cycleShift(m, day)} style={{
+                <button key={m} onClick={() => {
+                  if (!st || st === "休") { cycleShift(m, day); return; }
+                  // 出勤セルは1回タップで番種切り替え、長押し相当は editCell で実現
+                  // タップ: 番種切り替え / 2回タップ同じセル: 時刻編集
+                  if (isEditing) { setEditCell(null); }
+                  else if (editCell?.m === m && editCell?.day !== day) { cycleShift(m, day); setEditCell(null); }
+                  else { cycleShift(m, day); }
+                }} onDoubleClick={e => {
+                  e.stopPropagation();
+                  if (st && st !== "休") {
+                    setEditCell({ m, day, startMins: startM ?? defT?.start ?? 9*60+30, endMins: endM ?? defT?.end ?? 18*60+30 });
+                  }
+                }} style={{
                   border: "none", borderLeft: "1px solid #f5f4f2", minHeight: 44,
-                  background: st ? col.bg : isReq ? "#fff5f5" : "#fff",
+                  background: isEditing ? "#f0f8ff" : st ? col.bg : isReq ? "#fff5f5" : "#fff",
                   cursor: "pointer", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 1, padding: "4px 2px"
                 }}>
                   {st
                     ? <>
                         <span style={{ fontSize: 11, fontWeight: 500, color: col.text, lineHeight: 1 }}>{st}</span>
-                        {col.time && <span style={{ fontSize: 7, color: col.text, opacity: 0.7, letterSpacing: 0, lineHeight: 1 }}>{col.time}</span>}
+                        {timeStr && <span style={{ fontSize: 7, color: col.text, opacity: custom ? 1 : 0.7, letterSpacing: 0, lineHeight: 1 }}>{timeStr}</span>}
                       </>
                     : <span style={{ fontSize: isReq ? 8 : 10, color: isReq ? "#e8a0a0" : "#ddd" }}>{isReq ? "希" : "—"}</span>
                   }
@@ -1983,9 +2033,67 @@ function DraftView({ year, month }) {
 
       <div style={{ padding: "14px 16px 32px", fontSize: 10, color: "#bbb", lineHeight: 1.9, whiteSpace: "pre-line" }}>
         {mode === "assign"
-          ? "Autoで自動仮組み → 手動で微調整\nタップ: — → 早 → 中 → 遅 → 休 → —\n★ で繁忙日を設定(3人体制)"
+          ? "Autoで自動仮組み → 手動で微調整\nタップ: — → 早 → 中 → 遅 → 休 → —\n★ で繁忙日を設定(3人体制)\nダブルタップで出退勤時間を編集"
           : "タップして希望休を設定\n設定後にシフト組みタブでAutoを実行"}
       </div>
+
+      {/* 時刻編集ボトムシート */}
+      {editCell && (() => {
+        const { m: em, day: ed, startMins, endMins } = editCell;
+        const dow = new Date(year, month - 1, ed).getDay();
+        const dowStr = ["日","月","火","水","木","金","土"][dow];
+        return (
+          <div onClick={() => setEditCell(null)} style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 200,
+            display: "flex", alignItems: "flex-end"
+          }}>
+            <div onClick={e => e.stopPropagation()} style={{
+              width: "100%", background: "#fff", borderRadius: "16px 16px 0 0",
+              padding: "20px 20px 36px", boxSizing: "border-box"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+                <div>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>{em}</span>
+                  <span style={{ fontSize: 11, color: "#888", marginLeft: 8 }}>{month}/{ed}({dowStr})</span>
+                </div>
+                <button onClick={() => setEditCell(null)} style={{
+                  background: "none", border: "none", fontSize: 18, color: "#aaa", cursor: "pointer", padding: 4
+                }}>✕</button>
+              </div>
+
+              {rangeRow("出勤時刻", startMins,
+                v => setEditCell(prev => ({ ...prev, startMins: v, endMins: Math.max(prev.endMins, v + 60) })),
+                7*60, 14*60, 30,
+                v => minsToTime(v), " 出勤"
+              )}
+              {rangeRow("退勤時刻", endMins,
+                v => setEditCell(prev => ({ ...prev, endMins: v })),
+                startMins + 60, 23*60+30, 30,
+                v => minsToTime(v), " 退勤"
+              )}
+
+              <div style={{ fontSize: 10, color: "#aaa", textAlign: "center", marginBottom: 14 }}>
+                実働 {Math.floor((endMins - startMins) / 60)}h{(endMins - startMins) % 60 ? "30" : "00"}m
+              </div>
+
+              <button onClick={() => {
+                const ct = draft.customTimes || {};
+                save({
+                  ...draft,
+                  customTimes: {
+                    ...ct,
+                    [em]: { ...(ct[em] || {}), [ed]: { start: startMins, end: endMins } }
+                  }
+                });
+                setEditCell(null);
+              }} style={{
+                width: "100%", padding: "12px 0", background: "#111", color: "#fff",
+                border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer"
+              }}>保存</button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
