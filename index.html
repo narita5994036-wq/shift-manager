@@ -671,6 +671,7 @@ function ShiftManager() {
   const [confirmMultiDelete, setConfirmMultiDelete] = useState(false);
   const [slideDir, setSlideDir] = useState(null);
   const monthLabelLastTap = React.useRef(0);
+  const modalSwipeX = React.useRef(null);
   const [member, setMember]       = useState("成田");
   const [showMemberMenu, setShowMemberMenu] = useState(false);
   const [allShifts, setAllShifts] = useState({});
@@ -774,6 +775,17 @@ function ShiftManager() {
     const k = dateKey(year, month, day);
     setEditDay(day);
     setEditData(shifts[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
+    setConfirmDelete(false);
+  }
+  function navEditDay(delta) {
+    const d = new Date(year, month - 1, editDay + delta);
+    const ny = d.getFullYear(), nm = d.getMonth() + 1, nd = d.getDate();
+    const k = dateKey(ny, nm, nd);
+    const src = (ny === year && nm === month) ? shifts : (() => {
+      try { const r = storage.get(`shifts:${member}:${ny}-${String(nm).padStart(2,"0")}`); return r ? JSON.parse(r) : {}; } catch { return {}; }
+    })();
+    setYear(ny); setMonth(nm); setEditDay(nd);
+    setEditData(src[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
     setConfirmDelete(false);
   }
   function saveEdit() {
@@ -1017,35 +1029,37 @@ function ShiftManager() {
       {editDay && editData && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 100 }}
           onClick={() => { setEditDay(null); setConfirmDelete(false); }}>
-          <div style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 40px" }} onClick={e => e.stopPropagation()}>
+          <div
+            style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 40px", touchAction: "pan-y" }}
+            onClick={e => e.stopPropagation()}
+            onTouchStart={e => { modalSwipeX.current = e.touches[0].clientX; }}
+            onTouchEnd={e => {
+              const dx = e.changedTouches[0].clientX - (modalSwipeX.current ?? e.changedTouches[0].clientX);
+              if (Math.abs(dx) > 50) navEditDay(dx < 0 ? 1 : -1);
+            }}
+          >
 
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button onClick={() => {
-                  const d = new Date(year, month - 1, editDay - 1);
-                  const ny = d.getFullYear(), nm = d.getMonth() + 1, nd = d.getDate();
-                  const k = dateKey(ny, nm, nd);
-                  const src = (ny === year && nm === month) ? shifts : (() => { try { const r = storage.get(`shifts:${member}:${ny}-${String(nm).padStart(2,"0")}`); return r ? JSON.parse(r) : {}; } catch { return {}; } })();
-                  setYear(ny); setMonth(nm); setEditDay(nd);
-                  setEditData(src[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
-                  setConfirmDelete(false);
-                }} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#111", padding: 4 }}><IconChevronL /></button>
-                <div>
-                  <div style={{ fontSize: 9, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 4 }}>{year} / {String(month).padStart(2,"0")}</div>
-                  <div style={{ fontSize: 24, fontWeight: 300, letterSpacing: 0.5, display: "flex", alignItems: "baseline", gap: 8 }}>
-                    {editDay}
-                    <span style={{ fontSize: 13, fontWeight: 300, color: "#aaa", letterSpacing: 1 }}>{WEEKDAY_JP[new Date(year, month - 1, editDay).getDay()]}</span>
-                  </div>
+              <div>
+                <div style={{ fontSize: 9, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 4 }}>{year} / {String(month).padStart(2,"0")}</div>
+                <div style={{ fontSize: 24, fontWeight: 300, letterSpacing: 0.5, display: "flex", alignItems: "baseline", gap: 10 }}>
+                  {editDay}
+                  <span style={{ fontSize: 13, fontWeight: 300, color: "#aaa", letterSpacing: 1 }}>{WEEKDAY_JP[new Date(year, month - 1, editDay).getDay()]}</span>
+                  {!(editDay === todayD && month === todayM && year === todayY) && (
+                    <button onClick={() => {
+                      const k = dateKey(todayY, todayM, todayD);
+                      const src = (todayY === year && todayM === month) ? shifts : (() => {
+                        try { const r = storage.get(`shifts:${member}:${todayY}-${String(todayM).padStart(2,"0")}`); return r ? JSON.parse(r) : {}; } catch { return {}; }
+                      })();
+                      setYear(todayY); setMonth(todayM); setEditDay(todayD);
+                      setEditData(src[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
+                      setConfirmDelete(false);
+                    }} style={{
+                      background: "none", border: "1px solid #ddd", padding: "2px 8px",
+                      cursor: "pointer", fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", color: "#aaa"
+                    }}>Today</button>
+                  )}
                 </div>
-                <button onClick={() => {
-                  const d = new Date(year, month - 1, editDay + 1);
-                  const ny = d.getFullYear(), nm = d.getMonth() + 1, nd = d.getDate();
-                  const k = dateKey(ny, nm, nd);
-                  const src = (ny === year && nm === month) ? shifts : (() => { try { const r = storage.get(`shifts:${member}:${ny}-${String(nm).padStart(2,"0")}`); return r ? JSON.parse(r) : {}; } catch { return {}; } })();
-                  setYear(ny); setMonth(nm); setEditDay(nd);
-                  setEditData(src[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
-                  setConfirmDelete(false);
-                }} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#111", padding: 4 }}><IconChevronR /></button>
               </div>
               <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
                 {!confirmDelete && (
