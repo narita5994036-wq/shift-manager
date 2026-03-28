@@ -872,6 +872,12 @@ function ShiftManager() {
               })()}
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-end" }}>
+              <button onClick={() => setView("counter")} style={{
+                background: view === "counter" ? "#111" : "none",
+                border: `1px solid ${view === "counter" ? "#111" : "#888"}`,
+                padding: "5px 10px", cursor: "pointer", fontSize: 9, letterSpacing: 1,
+                color: view === "counter" ? "#fff" : "#888"
+              }}>Count</button>
               <button
                 onClick={() => { if (!pdfLoadState) setShowPdfGuide(true); }}
                 disabled={pdfLoadState === "loading"}
@@ -923,14 +929,14 @@ function ShiftManager() {
 
           {/* Tabs */}
           <div style={{ display: "flex", borderTop: "1px solid #e0dedd", alignItems: "center" }}>
-            {["calendar", "list", "counter", "draft"].map(v => (
+            {["calendar", "list", "draft"].map(v => (
               <button key={v} onClick={() => { setView(v); setSelectMode(false); setSelected([]); }} style={{
                 flex: 1, padding: "10px 0", background: "none", border: "none", cursor: "pointer",
                 fontSize: 9, letterSpacing: 3, textTransform: "uppercase",
                 color: view === v ? "#111" : "#bbb",
                 borderBottom: view === v ? "1.5px solid #111" : "1.5px solid transparent",
                 transition: "all 0.2s"
-              }}>{v === "calendar" ? "Cal" : v === "list" ? "List" : v === "counter" ? "Count" : "Draft"}</button>
+              }}>{v === "calendar" ? "Cal" : v === "list" ? "List" : "Draft"}</button>
             ))}
             {view === "list" && (
               <button onClick={() => { setSelectMode(s => !s); setSelected([]); setConfirmMultiDelete(false); }} style={{
