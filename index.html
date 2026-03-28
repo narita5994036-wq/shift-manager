@@ -1274,6 +1274,8 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick, 
             const [h, m] = data.startTime.split(":").map(Number);
             return h * 60 + m >= 11 * 60;
           })();
+          const isMid = !isOff && data?.startTime && !isEarly && !isLate;
+          const barColor = isOff ? "#ddd" : isEarly ? "#c9a84c" : isLate ? "#2d6a4f" : isMid ? "#4c7ab5" : data ? "#888" : "#eee";
           // 同じ日に出勤している他メンバー
           const sameDay = Object.entries(allShifts)
             .filter(([, ms]) => ms[k]?.status === "出勤")
@@ -1281,22 +1283,22 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick, 
           return (
             <button key={i} onClick={() => onDayClick(day)} className="cal-day" style={{
               border: "none", padding: "8px 4px 8px", cursor: "pointer",
-              background: isToday ? "#f0f0ef" : !data ? "transparent" : isOff ? "#f5f4f2" : "#fff",
+              background: isToday ? "#111" : !data ? "transparent" : isOff ? "#f5f4f2" : "#fff",
               display: "flex", flexDirection: "column", alignItems: "center", gap: 3, minHeight: 60,
-              borderTop: isToday ? "2px solid #111" : isOff ? "2px solid #ddd" : isEarly ? "2px solid #c9a84c" : isLate ? "2px solid #2d6a4f" : data ? "2px solid #111" : "2px solid #eee",
+              borderTop: `2px solid ${isToday ? "#111" : barColor}`,
               outline: "none", transition: "background 0.15s", position: "relative"
             }}>
               <span style={{
                 fontSize: 13, fontWeight: isToday ? 600 : 300,
-                color: isToday ? "#111" : !data ? "#ccc" : isOff ? "#ccc" : dow === 0 ? "#c0392b" : "#111"
+                color: isToday ? "#fff" : !data ? "#ccc" : isOff ? "#ccc" : dow === 0 ? "#c0392b" : "#111"
               }}>{day}</span>
-              {data && !isOff && <span style={{ fontSize: 10, color: "#888", fontWeight: 300 }}>{data.startTime}</span>}
-              {isOff && <span style={{ fontSize: 8, letterSpacing: 1.5, color: "#ccc", textTransform: "uppercase" }}>Off</span>}
-              {data?.memo && !isOff && <span style={{ width: 3, height: 3, background: "#111", borderRadius: "50%" }} />}
+              {data && !isOff && <span style={{ fontSize: 10, color: isToday ? "#aaa" : "#888", fontWeight: 300 }}>{data.startTime}</span>}
+              {isOff && <span style={{ fontSize: 8, letterSpacing: 1.5, color: isToday ? "#555" : "#ccc", textTransform: "uppercase" }}>Off</span>}
+              {data?.memo && !isOff && <span style={{ width: 3, height: 3, background: isToday ? "#fff" : "#111", borderRadius: "50%" }} />}
               {!isOff && sameDay.length > 0 && (
                 <div style={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>
                   {sameDay.map(n => (
-                    <span key={n} style={{ fontSize: 7, color: "#aaa", letterSpacing: 0.5 }}>{n}</span>
+                    <span key={n} style={{ fontSize: 7, color: isToday ? "#777" : "#aaa", letterSpacing: 0.5 }}>{n}</span>
                   ))}
                 </div>
               )}
@@ -1310,6 +1312,7 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick, 
 
 // ── List View ────────────────────────────────────────────────
 function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, selected, onToggle, allShifts = {} }) {
+  const todayD2 = new Date().getDate(), todayM2 = new Date().getMonth() + 1, todayY2 = new Date().getFullYear();
   return (
     <div style={{ background: "#fff" }}>
       {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
@@ -1317,6 +1320,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
         const k = dateKey(year, month, day);
         const data = shifts[k];
         const isOff = data?.status === "休日";
+        const isToday = day === todayD2 && month === todayM2 && year === todayY2;
         const hours = data && !isOff ? calcHours(data.startTime, data.endTime, data.breakTime ?? 60) : null;
         const isSelected = selected?.includes(day);
         // 他メンバーで出勤している人
@@ -1324,11 +1328,15 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
           .filter(([, ms]) => ms[k]?.status === "出勤")
           .map(([name, ms]) => ({ name, startTime: ms[k].startTime }));
 
+        const startMins = data && !isOff && data.startTime ? (() => { const [h,m] = data.startTime.split(":").map(Number); return h*60+m; })() : null;
+        const listBarColor = !data || isOff ? "transparent" : startMins <= 10*60 ? "#c9a84c" : startMins >= 11*60 ? "#2d6a4f" : "#4c7ab5";
         return (
           <button key={day} onClick={() => selectMode ? onToggle(day) : onDayClick(day)} className="list-row" style={{
-            display: "flex", alignItems: "center", background: isSelected ? "#f0eeec" : "transparent", border: "none",
-            borderBottom: "1px solid #f0eeec", padding: "12px 16px", cursor: "pointer", gap: 16,
-            width: "100%", textAlign: "left", transition: "background 0.1s"
+            display: "flex", alignItems: "center",
+            background: isToday ? "#111" : isSelected ? "#f0eeec" : "transparent",
+            border: "none", borderBottom: "1px solid #f0eeec", padding: "12px 16px",
+            borderLeft: `3px solid ${isToday ? "transparent" : listBarColor}`,
+            cursor: "pointer", gap: 16, width: "100%", textAlign: "left", transition: "background 0.1s"
           }}>
             {/* Select checkbox */}
             {selectMode && (
@@ -1342,31 +1350,31 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
               </div>
             )}
             <div style={{ width: 48, flexShrink: 0, display: "flex", alignItems: "baseline", gap: 4 }}>
-              <span style={{ fontSize: 17, fontWeight: 300, color: dow === 0 ? "#c0392b" : "#111" }}>{day}</span>
-              <span style={{ fontSize: 9, letterSpacing: 1, color: dow === 0 ? "#c0392b" : "#bbb", textTransform: "uppercase" }}>{WEEKDAY_JP[dow]}</span>
+              <span style={{ fontSize: 17, fontWeight: 300, color: isToday ? "#fff" : dow === 0 ? "#c0392b" : "#111" }}>{day}</span>
+              <span style={{ fontSize: 9, letterSpacing: 1, textTransform: "uppercase", color: isToday ? "#777" : dow === 0 ? "#c0392b" : "#bbb" }}>{WEEKDAY_JP[dow]}</span>
             </div>
             <div style={{ flex: 1 }}>
               {!data
-                ? <span style={{ fontSize: 11, color: "#ddd" }}>—</span>
+                ? <span style={{ fontSize: 11, color: isToday ? "#555" : "#ddd" }}>—</span>
                 : isOff
-                  ? <span style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#bbb" }}>Off</span>
+                  ? <span style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: isToday ? "#777" : "#bbb" }}>Off</span>
                   : <div>
-                      <span style={{ fontSize: 13, fontWeight: 300, color: "#333" }}>{data.startTime || "—"}{data.endTime ? ` – ${data.endTime}` : ""}</span>
-                      {hours && <span style={{ fontSize: 10, color: "#bbb", marginLeft: 10, letterSpacing: 1 }}>{formatHours(hours)}</span>}
-                      {data.memo && <div style={{ fontSize: 10, color: "#bbb", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{data.memo}</div>}
+                      <span style={{ fontSize: 13, fontWeight: 300, color: isToday ? "#fff" : "#333" }}>{data.startTime || "—"}{data.endTime ? ` – ${data.endTime}` : ""}</span>
+                      {hours && <span style={{ fontSize: 10, marginLeft: 10, letterSpacing: 1, color: isToday ? "#777" : "#bbb" }}>{formatHours(hours)}</span>}
+                      {data.memo && <div style={{ fontSize: 10, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: isToday ? "#888" : "#bbb" }}>{data.memo}</div>}
                     </div>
               }
               {!isOff && others.length > 0 && (
                 <div style={{ display: "flex", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
                   {others.map(({ name, startTime }) => (
-                    <span key={name} style={{ fontSize: 9, color: "#bbb", letterSpacing: 0.5 }}>
+                    <span key={name} style={{ fontSize: 9, letterSpacing: 0.5, color: isToday ? "#777" : "#bbb" }}>
                       {name} {startTime}
                     </span>
                   ))}
                 </div>
               )}
             </div>
-            {!selectMode && <span style={{ color: "#ddd" }}><IconArrow /></span>}
+            {!selectMode && <span style={{ color: isToday ? "#555" : "#ddd" }}><IconArrow /></span>}
           </button>
         );
       })}
