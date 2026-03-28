@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'shift_*.pdf'
+  workflow_dispatch:  # GitHub画面から手動実行可能
 
 jobs:
   extract:
