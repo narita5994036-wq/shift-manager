@@ -927,12 +927,6 @@ function ShiftManager() {
                 }}
                 style={{ fontSize: 13, fontWeight: 400, letterSpacing: 2, textTransform: "uppercase", cursor: "pointer", userSelect: "none" }}
               >{year} / {String(month).padStart(2,"0")}</span>
-              {!isCurrentMonth && (
-                <button onClick={goToday} style={{
-                  background: "none", border: "1px solid #ddd", padding: "2px 8px", cursor: "pointer",
-                  fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", color: "#aaa"
-                }}>Today</button>
-              )}
             </div>
             <button onClick={nextMonth} className="icon-btn" style={{ background: "none", border: "none", cursor: "pointer", color: "#111", padding: 4 }}><IconChevronR /></button>
           </div>
@@ -1045,19 +1039,11 @@ function ShiftManager() {
                 <div style={{ fontSize: 24, fontWeight: 300, letterSpacing: 0.5, display: "flex", alignItems: "baseline", gap: 10 }}>
                   {editDay}
                   <span style={{ fontSize: 13, fontWeight: 300, color: "#aaa", letterSpacing: 1 }}>{WEEKDAY_JP[new Date(year, month - 1, editDay).getDay()]}</span>
-                  {!(editDay === todayD && month === todayM && year === todayY) && (
-                    <button onClick={() => {
-                      const k = dateKey(todayY, todayM, todayD);
-                      const src = (todayY === year && todayM === month) ? shifts : (() => {
-                        try { const r = storage.get(`shifts:${member}:${todayY}-${String(todayM).padStart(2,"0")}`); return r ? JSON.parse(r) : {}; } catch { return {}; }
-                      })();
-                      setYear(todayY); setMonth(todayM); setEditDay(todayD);
-                      setEditData(src[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
-                      setConfirmDelete(false);
-                    }} style={{
-                      background: "none", border: "1px solid #ddd", padding: "2px 8px",
-                      cursor: "pointer", fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", color: "#aaa"
-                    }}>Today</button>
+                  {editDay === todayD && month === todayM && year === todayY && (
+                    <span style={{
+                      border: "1px solid #ddd", padding: "2px 8px",
+                      fontSize: 9, letterSpacing: 1.5, textTransform: "uppercase", color: "#aaa"
+                    }}>Today</span>
                   )}
                 </div>
               </div>
