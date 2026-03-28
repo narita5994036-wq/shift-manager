@@ -1285,7 +1285,7 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick, 
               border: "none", padding: "8px 4px 8px", cursor: "pointer",
               background: isToday ? "#111" : !data ? "transparent" : isOff ? "#f5f4f2" : "#fff",
               display: "flex", flexDirection: "column", alignItems: "center", gap: 3, minHeight: 60,
-              borderTop: `2px solid ${isToday ? "#111" : barColor}`,
+              borderTop: `2px solid ${barColor}`,
               outline: "none", transition: "background 0.15s", position: "relative"
             }}>
               <span style={{
@@ -1335,7 +1335,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
             display: "flex", alignItems: "center",
             background: isToday ? "#111" : isSelected ? "#f0eeec" : "transparent",
             border: "none", borderBottom: "1px solid #f0eeec", padding: "12px 16px",
-            borderLeft: `3px solid ${isToday ? "transparent" : listBarColor}`,
+            borderLeft: `3px solid ${listBarColor}`,
             cursor: "pointer", gap: 16, width: "100%", textAlign: "left", transition: "background 0.1s"
           }}>
             {/* Select checkbox */}
