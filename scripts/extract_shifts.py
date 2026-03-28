@@ -13,7 +13,7 @@ NAME_MAP = {
     "narita":    "成田",
     "shoda":     "正田",
     "otani":     "尾谷",
-    # 必要に応じて追加
+    "hiratani":  "中谷",
 }
 
 def decode_pdf_str(b):
