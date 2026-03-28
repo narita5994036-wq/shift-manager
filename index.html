@@ -1543,10 +1543,24 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
     return pool.sort((a, b) => typeDeficit(m, b) - typeDeficit(m, a))[0] || "早";
   };
 
-  // Phase 1: 繁忙日 → 3〜4人出勤(希望休以外は全員)
+  // Phase 1: 繁忙日 → 最低3人確保、ただし目標時間を優先
+  //  出勤日数が少ない(目標まで余裕がある)メンバーから優先して埋め、
+  //  3人確保後は目標ペースに達していないメンバーだけ追加出勤
+  const BUSY_MIN = 3;
   for (const d of [...busySet].sort((a, b) => a - b)) {
     const avail = MEMBERS.filter(m => work[m][d] === undefined);
-    avail.forEach(m => { work[m][d] = true; }); // 全員出勤(希望休確定済みの人は除外済み)
+    avail.sort((a, b) => workCount(a) - workCount(b)); // 出勤日数が少ない順
+    let wToday = dayWorkers(d);
+    for (const m of avail) {
+      const cur  = workCount(m);
+      const need = targetDays - cur;
+      if (wToday < BUSY_MIN || need > 0) {
+        work[m][d] = true;
+        wToday++;
+      } else {
+        work[m][d] = false;
+      }
+    }
   }
 
   // Phase 2: 通常日 — 1日あたりMIN_STAFF〜MAX_STAFF人になるよう割り当て
