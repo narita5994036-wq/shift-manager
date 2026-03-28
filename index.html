@@ -967,7 +967,7 @@ function ShiftManager() {
                 ? <CalendarView year={year} month={month} daysInMonth={daysInMonth} firstDow={firstDow} shifts={shifts} onDayClick={openEdit} allShifts={allShifts} />
                 : view === "list"
                   ? <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} allShifts={allShifts} />
-                  : <DraftView year={year} month={month} onAutoComplete={() => setView("calendar")} />
+                  : <DraftView year={year} month={month} />
             }
           </div>
       }
@@ -1579,7 +1579,7 @@ const DRAFT_TIMES = {
 const minsToTime = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${m%60===0?'00':'30'}`;
 const timeToMins = t => { const [h,mm] = t.split(':').map(Number); return h*60+mm; };
 
-function DraftView({ year, month, onAutoComplete }) {
+function DraftView({ year, month }) {
   const daysInMonth = new Date(year, month, 0).getDate();
   const sk = `draft:${year}-${String(month).padStart(2, "0")}`;
 
@@ -1610,7 +1610,7 @@ function DraftView({ year, month, onAutoComplete }) {
     });
     save({ ...draft, assignments: newAssign, customTimes: mergedCustom });
     setAutoFlash(true);
-    setTimeout(() => { setAutoFlash(false); if (onAutoComplete) onAutoComplete(); }, 1200);
+    setTimeout(() => setAutoFlash(false), 1200);
   }
 
   function handleClear() {
