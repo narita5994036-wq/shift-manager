@@ -1355,13 +1355,14 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
           <div key={day} style={{
             display: "grid", gridTemplateColumns: `40px repeat(${MEMBERS.length}, 1fr)`,
             borderBottom: "1px solid #f0f0ee",
-            background: isToday ? "#111" : isSelected ? "#f0eeec" : "#fff"
+            background: isSelected ? "#f0eeec" : "#fff"
           }}>
             {/* Date cell */}
             <div onClick={() => selectMode && onToggle(day)} style={{
               padding: "6px 4px", display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
-              cursor: selectMode ? "pointer" : "default"
+              cursor: selectMode ? "pointer" : "default",
+              background: isToday ? "#111" : "transparent"
             }}>
               {selectMode && (
                 <div style={{
@@ -1385,9 +1386,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
               const col = DRAFT_COLORS[type];
               const isCurrent = m === member;
 
-              const cellBg = isToday
-                ? (type ? col.bg + "22" : "transparent")
-                : (type ? col.bg : isOff ? "#f8f7f6" : "#fff");
+              const cellBg = type ? col.bg : isOff ? "#f8f7f6" : "#fff";
 
               return (
                 <button key={m} onClick={() => isCurrent && (selectMode ? onToggle(day) : onDayClick(day))}
@@ -1404,9 +1403,9 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                       <span style={{ fontSize: 7, color: col.text, opacity: 0.8, lineHeight: 1 }}>{data.startTime}</span>
                     </>
                   ) : isOff ? (
-                    <span style={{ fontSize: 9, letterSpacing: 1, color: isToday ? "#555" : "#ccc" }}>休</span>
+                    <span style={{ fontSize: 9, letterSpacing: 1, color: "#ccc" }}>休</span>
                   ) : (
-                    <span style={{ fontSize: 10, color: isToday ? "#444" : "#ddd" }}>—</span>
+                    <span style={{ fontSize: 10, color: "#ddd" }}>—</span>
                   )}
                 </button>
               );
