@@ -1021,10 +1021,10 @@ function ShiftManager() {
 
       {/* ── Edit Modal ─────────────────────────────── */}
       {editDay && editData && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 100, overflowY: "auto", paddingTop: 20 }}
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 100, overflowY: "auto", paddingTop: 60 }}
           onClick={() => { setEditDay(null); setConfirmDelete(false); }}>
           <div
-            style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 60px", touchAction: "pan-y", minHeight: "calc(100vh - 20px)" }}
+            style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 60px", touchAction: "pan-y", minHeight: "calc(100vh - 60px)" }}
             onClick={e => e.stopPropagation()}
             onTouchStart={e => { modalSwipeX.current = e.touches[0].clientX; }}
             onTouchEnd={e => {
