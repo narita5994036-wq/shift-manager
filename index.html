@@ -1265,16 +1265,10 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick, 
           const data = shifts[k];
           const isOff = data?.status === "休日";
           const isToday = year === todayY && month === todayM && day === todayD;
-          const isEarly = !isOff && data?.startTime && (() => {
-            const [h, m] = data.startTime.split(":").map(Number);
-            const mins = h * 60 + m;
-            return mins >= 9 * 60 + 30 && mins <= 10 * 60;
-          })();
-          const isLate = !isOff && data?.startTime && (() => {
-            const [h, m] = data.startTime.split(":").map(Number);
-            return h * 60 + m >= 11 * 60;
-          })();
-          const isMid = !isOff && data?.startTime && !isEarly && !isLate;
+          const shiftMins = (!isOff && data?.startTime) ? (() => { const [h,m] = data.startTime.split(":").map(Number); return h*60+m; })() : null;
+          const isEarly = shiftMins !== null && shiftMins < 10 * 60;
+          const isLate  = shiftMins !== null && shiftMins >= 11 * 60;
+          const isMid   = shiftMins !== null && !isEarly && !isLate;
           const barColor = isOff ? "#ddd" : isEarly ? "#c9a84c" : isLate ? "#2d6a4f" : isMid ? "#4c7ab5" : data ? "#888" : "#eee";
           // 同じ日に出勤している他メンバー
           const sameDay = Object.entries(allShifts)
@@ -1332,7 +1326,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
           .map(([name, ms]) => ({ name, startTime: ms[k].startTime }));
 
         const startMins = data && !isOff && data.startTime ? (() => { const [h,m] = data.startTime.split(":").map(Number); return h*60+m; })() : null;
-        const listBarColor = !data || isOff ? "transparent" : startMins <= 10*60 ? "#c9a84c" : startMins >= 11*60 ? "#2d6a4f" : "#4c7ab5";
+        const listBarColor = !data || isOff || startMins === null ? "transparent" : startMins < 10*60 ? "#c9a84c" : startMins >= 11*60 ? "#2d6a4f" : "#4c7ab5";
         return (
           <button key={day} onClick={() => selectMode ? onToggle(day) : onDayClick(day)} className="list-row" style={{
             display: "flex", alignItems: "center",
