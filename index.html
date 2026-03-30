@@ -1055,10 +1055,10 @@ function ShiftManager() {
 
       {/* ── Edit Modal ─────────────────────────────── */}
       {editDay && editData && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 100, overflowY: "auto", paddingTop: 60 }}
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", display: "flex", alignItems: "flex-start", justifyContent: "center", zIndex: 100, overflowY: "auto", paddingTop: 70 }}
           onClick={() => { setEditDay(null); setConfirmDelete(false); }}>
           <div
-            style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 60px", touchAction: "pan-y", minHeight: "calc(100vh - 60px)" }}
+            style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 60px", touchAction: "pan-y", minHeight: "calc(100vh - 70px)" }}
             onClick={e => e.stopPropagation()}
             onTouchStart={e => { modalSwipeX.current = e.touches[0].clientX; }}
             onTouchEnd={e => {
@@ -1070,6 +1070,7 @@ function ShiftManager() {
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
               <div>
                 <div style={{ fontSize: 9, letterSpacing: 3, color: "#aaa", textTransform: "uppercase", marginBottom: 4 }}>{year} / {String(month).padStart(2,"0")}</div>
+                <div style={{ fontSize: 9, letterSpacing: 1, color: "#bbb", marginBottom: 6 }}>{member}</div>
                 <div style={{ fontSize: 24, fontWeight: 300, letterSpacing: 0.5, display: "flex", alignItems: "baseline", gap: 10 }}>
                   {editDay}
                   <span style={{ fontSize: 13, fontWeight: 300, color: "#aaa", letterSpacing: 1 }}>{WEEKDAY_JP[new Date(year, month - 1, editDay).getDay()]}</span>
