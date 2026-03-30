@@ -1409,8 +1409,19 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
   const today = new Date();
   const todayD2 = today.getDate(), todayM2 = today.getMonth() + 1, todayY2 = today.getFullYear();
   const dragRef = React.useRef({ source: null });
-  const [dragSrc, setDragSrc] = React.useState(null); // {m, day} for visual
-  const [dragTarget, setDragTarget] = React.useState(null); // {m, day} for visual
+  const [dragSrc, setDragSrc] = React.useState(null);
+  const [dragTarget, setDragTarget] = React.useState(null);
+  const cellDblTapRef = React.useRef({ m: null, day: null, t: 0 });
+  const listContainerRef = React.useRef(null);
+
+  // non-passive touchmove: prevent page scroll while dragging
+  React.useEffect(() => {
+    const el = listContainerRef.current;
+    if (!el) return;
+    const handler = e => { if (dragRef.current.source) e.preventDefault(); };
+    el.addEventListener('touchmove', handler, { passive: false });
+    return () => el.removeEventListener('touchmove', handler);
+  }, []);
 
   const allData = {};
   MEMBERS.forEach(m => { allData[m] = m === member ? shifts : (allShifts[m] || {}); });
@@ -1423,7 +1434,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
   };
 
   return (
-    <div style={{ background: "#fff" }}>
+    <div ref={listContainerRef} style={{ background: "#fff" }}>
       {/* Sticky header */}
       <div style={{
         display: "grid", gridTemplateColumns: `40px repeat(${MEMBERS.length}, 1fr)`,
@@ -1481,7 +1492,17 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
               return (
                 <button key={m}
                   data-m={m} data-day={String(day)}
-                  onClick={() => selectMode ? onToggle(m, day) : onDayClick(day, m)}
+                  onClick={() => {
+                    if (selectMode) { onToggle(m, day); return; }
+                    const now = Date.now();
+                    const last = cellDblTapRef.current;
+                    if (last.m === m && last.day === day && now - last.t < 350) {
+                      cellDblTapRef.current = { m: null, day: null, t: 0 };
+                      onDayClick(day, m);
+                    } else {
+                      cellDblTapRef.current = { m, day, t: now };
+                    }
+                  }}
                   onTouchStart={e => {
                     if (selectMode) return;
                     e.stopPropagation(); // 親の月スワイプ起点を記録させない
