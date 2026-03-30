@@ -1342,7 +1342,7 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick, 
           const dow = (firstDow + day - 1) % 7;
           const k = dateKey(year, month, day);
           const data = shifts[k];
-          const isOff = data?.status === "休日";
+          const isOff = !data || data.status === "休日";
           const isToday = year === todayY && month === todayM && day === todayD;
           const shiftMins = (!isOff && data?.startTime) ? (() => { const [h,m] = data.startTime.split(":").map(Number); return h*60+m; })() : null;
           const isEarly = shiftMins !== null && shiftMins < 10 * 60;
