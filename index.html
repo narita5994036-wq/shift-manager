@@ -840,6 +840,37 @@ function ShiftManager() {
     setSelectMode(false);
     setConfirmMultiDelete(false);
   }
+  function applyPreset(type) {
+    const ym = `${year}-${String(month).padStart(2,"0")}`;
+    const [startTime, endTime] = DRAFT_COLORS[type].time.split("-");
+    const entry = { status: "出勤", startTime, endTime, breakTime: 60, memo: "" };
+    const byMember = {};
+    selected.forEach(key => {
+      const idx = key.indexOf(":");
+      const m = key.slice(0, idx), d = parseInt(key.slice(idx + 1));
+      if (!byMember[m]) byMember[m] = [];
+      byMember[m].push(d);
+    });
+    let newShifts = shifts;
+    Object.entries(byMember).forEach(([m, days]) => {
+      const sk = `shifts:${m}:${ym}`;
+      try {
+        const raw = storage.get(sk);
+        const s = raw ? JSON.parse(raw) : {};
+        days.forEach(d => { s[dateKey(year, month, d)] = { ...entry }; });
+        storage.set(sk, JSON.stringify(s));
+        if (m === member) newShifts = s;
+      } catch(e) {}
+    });
+    setShifts(newShifts);
+    const all = {};
+    MEMBERS.forEach(m => {
+      if (m !== member) { try { const r = storage.get(`shifts:${m}:${ym}`); if (r) all[m] = JSON.parse(r); } catch {} }
+    });
+    setAllShifts(all);
+    setSelected([]);
+    setSelectMode(false);
+  }
   const prevMonth = () => { setSlideDir("right"); if (month === 1) { setYear(y => y - 1); setMonth(12); } else setMonth(m => m - 1); };
   const nextMonth = () => { setSlideDir("left");  if (month === 12) { setYear(y => y + 1); setMonth(1); } else setMonth(m => m + 1); };
   const goToday   = () => { setSlideDir(null); setYear(today.getFullYear()); setMonth(today.getMonth() + 1); setView("calendar"); };
@@ -1041,13 +1072,26 @@ function ShiftManager() {
             </>
           ) : (
             <>
-              <div style={{ flex: 1, fontSize: 11, color: "#aaa", letterSpacing: 1 }}>{selected.length}件選択中</div>
+              <div style={{ fontSize: 11, color: "#aaa", letterSpacing: 1, marginRight: "auto" }}>{selected.length}件選択中</div>
+              {["早","中","遅"].map(type => {
+                const c = DRAFT_COLORS[type];
+                return (
+                  <button key={type} onClick={() => { if (selected.length > 0) applyPreset(type); }}
+                    style={{
+                      padding: "8px 14px", border: `1px solid ${c.text}`,
+                      background: selected.length > 0 ? c.bg : "#f5f4f2",
+                      cursor: selected.length > 0 ? "pointer" : "default",
+                      fontSize: 11, fontWeight: 500, color: selected.length > 0 ? c.text : "#ccc",
+                      borderRadius: 4, transition: "all 0.15s"
+                    }}>{type}</button>
+                );
+              })}
               <button onClick={() => { if (selected.length > 0) setConfirmMultiDelete(true); }} style={{
-                padding: "10px 20px", background: selected.length > 0 ? "#c0392b" : "#e0dedd",
+                padding: "8px 14px", background: selected.length > 0 ? "#c0392b" : "#e0dedd",
                 border: "none", cursor: selected.length > 0 ? "pointer" : "default",
                 fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#fff",
-                transition: "background 0.2s"
-              }}>Delete {selected.length > 0 ? `(${selected.length})` : ""}</button>
+                borderRadius: 4, transition: "background 0.2s"
+              }}>Del</button>
             </>
           )}
         </div>
@@ -1408,7 +1452,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
               const cellKey = `${m}:${day}`;
               const isCellSelected = selectMode && selected?.includes(cellKey);
 
-              const cellBg = isCellSelected ? "#e8ecf5"
+              const cellBg = isCellSelected ? "#ebebea"
                 : type ? col.bg : isOff ? "#f8f7f6" : "#fff";
 
               return (
@@ -1418,14 +1462,14 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                     background: cellBg, cursor: "pointer",
                     display: "flex", flexDirection: "column", alignItems: "center",
                     justifyContent: "center", gap: 1, padding: "4px 2px",
-                    borderTop: isCellSelected ? "2px solid #4c7ab5" : type ? `2px solid ${col.text}` : "2px solid transparent",
+                    borderTop: isCellSelected ? "2px solid #999" : type ? `2px solid ${col.text}` : "2px solid transparent",
                     position: "relative"
                   }}>
                   {isCellSelected && (
                     <div style={{
                       position: "absolute", top: 3, right: 3,
                       width: 10, height: 10, borderRadius: "50%",
-                      background: "#4c7ab5",
+                      background: "#999",
                       display: "flex", alignItems: "center", justifyContent: "center"
                     }}>
                       <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -1433,13 +1477,13 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                   )}
                   {type ? (
                     <>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: isCellSelected ? "#4c7ab5" : col.text }}>{type}</span>
-                      <span style={{ fontSize: 7, color: isCellSelected ? "#4c7ab5" : col.text, opacity: 0.8, lineHeight: 1 }}>{data.startTime}</span>
+                      <span style={{ fontSize: 11, fontWeight: 500, color: isCellSelected ? "#888" : col.text }}>{type}</span>
+                      <span style={{ fontSize: 7, color: isCellSelected ? "#888" : col.text, opacity: 0.8, lineHeight: 1 }}>{data.startTime}</span>
                     </>
                   ) : isOff ? (
-                    <span style={{ fontSize: 9, letterSpacing: 1, color: isCellSelected ? "#4c7ab5" : "#ccc" }}>休</span>
+                    <span style={{ fontSize: 9, letterSpacing: 1, color: "#ccc" }}>休</span>
                   ) : (
-                    <span style={{ fontSize: 10, color: isCellSelected ? "#4c7ab5" : "#ddd" }}>—</span>
+                    <span style={{ fontSize: 10, color: "#ddd" }}>—</span>
                   )}
                 </button>
               );
