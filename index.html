@@ -1517,7 +1517,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                       dragRef.current.source = { m, day };
                       setDragSrc({ m, day });
                       if (navigator.vibrate) navigator.vibrate(40);
-                    }, 600);
+                    }, 400);
                   }}
                   onTouchMove={e => {
                     if (selectMode) return;
