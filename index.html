@@ -765,8 +765,7 @@ function ShiftManager() {
     let work = 0, off = 0, totalH = 0, hasTime = false;
     for (let d = 1; d <= daysInMonth; d++) {
       const s = shifts[dateKey(year, month, d)];
-      if (!s) continue;
-      if (s.status === "休日") off++;
+      if (!s || s.status === "休日") { off++; continue; }
       else { work++; const h = calcHours(s.startTime, s.endTime, s.breakTime ?? 60); if (h) { totalH += h; hasTime = true; } }
     }
     return { work, off, totalH: hasTime ? totalH : null };
