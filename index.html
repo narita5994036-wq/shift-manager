@@ -1435,7 +1435,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
   };
 
   return (
-    <div ref={listContainerRef} style={{ background: "#fff" }}>
+    <div ref={listContainerRef} style={{ background: "#fff", paddingBottom: 80 }}>
       {/* Sticky header */}
       <div style={{
         display: "grid", gridTemplateColumns: `40px repeat(${MEMBERS.length}, 1fr) 24px`,
@@ -1620,6 +1620,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
           whiteSpace: "pre-wrap", wordBreak: "break-all",
           boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
         }}>
+          <div style={{ fontSize: 9, letterSpacing: 2, color: "#aaa", marginBottom: 4, textTransform: "uppercase" }}>{month}/{memoPreview.day}</div>
           {memoPreview.text}
         </div>
       )}
