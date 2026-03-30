@@ -1549,8 +1549,8 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                     const src = dragRef.current.source;
                     dragRef.current.source = null;
                     setDragSrc(null); setDragTarget(null);
+                    e.stopPropagation(); // 常に月スワイプへの伝播を防ぐ
                     if (!src) return;
-                    e.stopPropagation();
                     const touch = e.changedTouches[0];
                     const el = document.elementFromPoint(touch.clientX, touch.clientY);
                     const btn = el?.closest('[data-m][data-day]');
@@ -1602,7 +1602,10 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
               }).filter(Boolean);
               const isOpen = memoPreview?.day === day;
               return (
-                <button onClick={() => memoItems.length && setMemoPreview(p => p?.day === day ? null : { day, items: memoItems })}
+                <button
+                  onTouchStart={e => e.stopPropagation()}
+                  onTouchEnd={e => e.stopPropagation()}
+                  onClick={() => memoItems.length && setMemoPreview(p => p?.day === day ? null : { day, items: memoItems })}
                   style={{
                     border: "none", borderLeft: "1px solid #f0f0ee", background: "transparent",
                     display: "flex", alignItems: "center", justifyContent: "center",
@@ -1630,7 +1633,9 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
 
       {/* Memo quick preview */}
       {memoPreview && (
-        <div onClick={() => setMemoPreview(null)} style={{
+        <div onClick={() => setMemoPreview(null)}
+          onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}
+          style={{
           position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
           background: "#111", color: "#fff", borderRadius: 10, padding: "12px 16px",
           maxWidth: "85vw", width: "85vw", fontSize: 12, lineHeight: 1.6, zIndex: 300,
