@@ -841,8 +841,9 @@ function ShiftManager() {
   }
   function applyPreset(type) {
     const ym = `${year}-${String(month).padStart(2,"0")}`;
-    const [startTime, endTime] = DRAFT_COLORS[type].time.split("-");
-    const entry = { status: "出勤", startTime, endTime, breakTime: 60, memo: "" };
+    const entry = type === "休"
+      ? { status: "休日", startTime: "", endTime: "", breakTime: 60, memo: "" }
+      : (() => { const [s, e] = DRAFT_COLORS[type].time.split("-"); return { status: "出勤", startTime: s, endTime: e, breakTime: 60, memo: "" }; })();
     const byMember = {};
     selected.forEach(key => {
       const idx = key.indexOf(":");
@@ -869,6 +870,24 @@ function ShiftManager() {
     setAllShifts(all);
     setSelected([]);
     setSelectMode(false);
+  }
+  function swapCells(srcM, srcDay, dstM, dstDay) {
+    const ym = `${year}-${String(month).padStart(2,"0")}`;
+    const srcKey = dateKey(year, month, srcDay);
+    const dstKey = dateKey(year, month, dstDay);
+    const ms = new Set([srcM, dstM]);
+    const data = {};
+    ms.forEach(m => { try { const r = storage.get(`shifts:${m}:${ym}`); data[m] = r ? JSON.parse(r) : {}; } catch { data[m] = {}; } });
+    const srcEntry = data[srcM][srcKey];
+    const dstEntry = data[dstM][dstKey];
+    if (dstEntry) data[srcM][srcKey] = dstEntry; else delete data[srcM][srcKey];
+    if (srcEntry) data[dstM][dstKey] = srcEntry; else delete data[dstM][dstKey];
+    let newShifts = shifts;
+    ms.forEach(m => { storage.set(`shifts:${m}:${ym}`, JSON.stringify(data[m])); if (m === member) newShifts = data[m]; });
+    setShifts(newShifts);
+    const all = {};
+    MEMBERS.forEach(m => { if (m !== member) { try { const r = storage.get(`shifts:${m}:${ym}`); if (r) all[m] = JSON.parse(r); } catch {} } });
+    setAllShifts(all);
   }
   const prevMonth = () => { setSlideDir("right"); if (month === 1) { setYear(y => y - 1); setMonth(12); } else setMonth(m => m - 1); };
   const nextMonth = () => { setSlideDir("left");  if (month === 12) { setYear(y => y + 1); setMonth(1); } else setMonth(m => m + 1); };
@@ -1050,7 +1069,7 @@ function ShiftManager() {
               : view === "calendar"
                 ? <CalendarView year={year} month={month} daysInMonth={daysInMonth} firstDow={firstDow} shifts={shifts} onDayClick={openEdit} allShifts={allShifts} />
                 : view === "list"
-                  ? <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} allShifts={allShifts} member={member} />
+                  ? <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} allShifts={allShifts} member={member} onSwap={swapCells} />
                   : <DraftView year={year} month={month} />
             }
           </div>
@@ -1072,7 +1091,7 @@ function ShiftManager() {
           ) : (
             <>
               <div style={{ fontSize: 11, color: "#aaa", letterSpacing: 1, marginRight: "auto" }}>{selected.length}件選択中</div>
-              {["早","中","遅"].map(type => {
+              {["早","中","遅","休"].map(type => {
                 const c = DRAFT_COLORS[type];
                 return (
                   <button key={type} onClick={() => { if (selected.length > 0) applyPreset(type); }}
@@ -1386,9 +1405,12 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick, 
 }
 
 // ── List View ────────────────────────────────────────────────
-function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, selected, onToggle, allShifts = {}, member }) {
+function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, selected, onToggle, allShifts = {}, member, onSwap }) {
   const today = new Date();
   const todayD2 = today.getDate(), todayM2 = today.getMonth() + 1, todayY2 = today.getFullYear();
+  const dragRef = React.useRef({ source: null });
+  const [dragSrc, setDragSrc] = React.useState(null); // {m, day} for visual
+  const [dragTarget, setDragTarget] = React.useState(null); // {m, day} for visual
 
   const allData = {};
   MEMBERS.forEach(m => { allData[m] = m === member ? shifts : (allShifts[m] || {}); });
@@ -1454,15 +1476,48 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
               const cellBg = isCellSelected ? "#ebebea"
                 : type ? col.bg : isOff ? "#f8f7f6" : "#fff";
 
+              const isDragSrc = dragSrc?.m === m && dragSrc?.day === day;
+              const isDragTgt = dragTarget?.m === m && dragTarget?.day === day;
               return (
-                <button key={m} onClick={() => selectMode ? onToggle(m, day) : onDayClick(day, m)}
+                <button key={m}
+                  data-m={m} data-day={String(day)}
+                  onClick={() => selectMode ? onToggle(m, day) : onDayClick(day, m)}
+                  onTouchStart={e => {
+                    if (selectMode) return;
+                    dragRef.current.source = { m, day };
+                    setDragSrc({ m, day });
+                  }}
+                  onTouchMove={e => {
+                    if (!dragRef.current.source || selectMode) return;
+                    const touch = e.touches[0];
+                    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const btn = el?.closest('[data-m][data-day]');
+                    if (btn) {
+                      const tm = btn.dataset.m, td = parseInt(btn.dataset.day);
+                      if (dragTarget?.m !== tm || dragTarget?.day !== td) setDragTarget({ m: tm, day: td });
+                    }
+                  }}
+                  onTouchEnd={e => {
+                    const src = dragRef.current.source;
+                    dragRef.current.source = null;
+                    setDragSrc(null); setDragTarget(null);
+                    if (!src) return;
+                    const touch = e.changedTouches[0];
+                    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+                    const btn = el?.closest('[data-m][data-day]');
+                    if (btn) {
+                      const tm = btn.dataset.m, td = parseInt(btn.dataset.day);
+                      if (!(src.m === tm && src.day === td)) { e.preventDefault(); onSwap(src.m, src.day, tm, td); }
+                    }
+                  }}
                   style={{
                     border: "none", borderLeft: "1px solid #f0f0ee", minHeight: 44,
-                    background: cellBg, cursor: "pointer",
+                    background: isDragTgt ? "#e8f0fe" : cellBg, cursor: "pointer",
                     display: "flex", flexDirection: "column", alignItems: "center",
                     justifyContent: "center", gap: 1, padding: "4px 2px",
-                    borderTop: isCellSelected ? "2px solid #999" : type ? `2px solid ${col.text}` : "2px solid transparent",
-                    position: "relative"
+                    borderTop: isDragTgt ? "2px solid #4c7ab5" : isCellSelected ? "2px solid #999" : type ? `2px solid ${col.text}` : "2px solid transparent",
+                    position: "relative", opacity: isDragSrc ? 0.35 : 1,
+                    transition: "opacity 0.1s"
                   }}>
                   {isCellSelected && (
                     <div style={{
