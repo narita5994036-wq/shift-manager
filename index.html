@@ -1765,6 +1765,7 @@ function DraftView({ year, month }) {
   const defaultTargetH = calcMonthlyTargetHours(year, month);
   const [autoFlash, setAutoFlash] = useState(false);
   const [editCell, setEditCell] = useState(null); // { m, day, startMins, endMins }
+  const cellLastTap = React.useRef({ m: null, day: null, t: 0 });
 
   function save(next) {
     setDraft(next);
@@ -2049,15 +2050,17 @@ function DraftView({ year, month }) {
               return (
                 <button key={m} onClick={() => {
                   if (!st || st === "休") { cycleShift(m, day); return; }
-                  // 出勤セルは1回タップで番種切り替え、長押し相当は editCell で実現
-                  // タップ: 番種切り替え / 2回タップ同じセル: 時刻編集
-                  if (isEditing) { setEditCell(null); }
-                  else if (editCell?.m === m && editCell?.day !== day) { cycleShift(m, day); setEditCell(null); }
-                  else { cycleShift(m, day); }
-                }} onDoubleClick={e => {
-                  e.stopPropagation();
-                  if (st && st !== "休") {
+                  if (isEditing) { setEditCell(null); return; }
+                  if (editCell?.m === m && editCell?.day !== day) { cycleShift(m, day); setEditCell(null); return; }
+                  // ref ベースのダブルタップ: 同じセルを400ms以内に2回タップで時刻編集
+                  const now = Date.now();
+                  const last = cellLastTap.current;
+                  if (last.m === m && last.day === day && now - last.t < 400) {
+                    cellLastTap.current = { m: null, day: null, t: 0 };
                     setEditCell({ m, day, startMins: startM ?? defT?.start ?? 9*60+30, endMins: endM ?? defT?.end ?? 18*60+30 });
+                  } else {
+                    cellLastTap.current = { m, day, t: now };
+                    cycleShift(m, day);
                   }
                 }} style={{
                   border: "none", borderLeft: "1px solid #f5f4f2", minHeight: 44,
