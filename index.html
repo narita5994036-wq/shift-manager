@@ -671,6 +671,7 @@ function ShiftManager() {
   const [confirmMultiDelete, setConfirmMultiDelete] = useState(false);
   const [slideDir, setSlideDir] = useState(null);
   const monthLabelLastTap = React.useRef(0);
+  const listTabLastTap = React.useRef(0);
   const modalSwipeX = React.useRef(null);
   const [member, setMember]       = useState("成田");
   const [showMemberMenu, setShowMemberMenu] = useState(false);
@@ -805,13 +806,36 @@ function ShiftManager() {
     setEditDay(null);
     setConfirmDelete(false);
   }
-  function toggleSelect(day) {
-    setSelected(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
+  function toggleSelect(m, day) {
+    const key = `${m}:${day}`;
+    setSelected(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
   }
   function deleteSelected() {
-    const n = { ...shifts };
-    selected.forEach(d => delete n[dateKey(year, month, d)]);
-    saveShifts(n);
+    const ym = `${year}-${String(month).padStart(2,"0")}`;
+    const byMember = {};
+    selected.forEach(key => {
+      const idx = key.indexOf(":");
+      const m = key.slice(0, idx), d = parseInt(key.slice(idx + 1));
+      if (!byMember[m]) byMember[m] = [];
+      byMember[m].push(d);
+    });
+    let newShifts = shifts;
+    Object.entries(byMember).forEach(([m, days]) => {
+      const sk = `shifts:${m}:${ym}`;
+      try {
+        const raw = storage.get(sk);
+        const s = raw ? JSON.parse(raw) : {};
+        days.forEach(d => delete s[dateKey(year, month, d)]);
+        storage.set(sk, JSON.stringify(s));
+        if (m === member) newShifts = s;
+      } catch(e) {}
+    });
+    setShifts(newShifts);
+    const all = {};
+    MEMBERS.forEach(m => {
+      if (m !== member) { try { const r = storage.get(`shifts:${m}:${ym}`); if (r) all[m] = JSON.parse(r); } catch {} }
+    });
+    setAllShifts(all);
     setSelected([]);
     setSelectMode(false);
     setConfirmMultiDelete(false);
@@ -949,24 +973,28 @@ function ShiftManager() {
 
           {/* Tabs */}
           <div style={{ display: "flex", borderTop: "1px solid #e0dedd", alignItems: "center" }}>
-            {["calendar", "list", "draft"].map(v => (
-              <button key={v} onClick={() => { setView(v); setSelectMode(false); setSelected([]); }} style={{
-                flex: 1, padding: "10px 0", background: "none", border: "none", cursor: "pointer",
-                fontSize: 9, letterSpacing: 3, textTransform: "uppercase",
-                color: view === v ? "#111" : "#bbb",
-                borderBottom: view === v ? "1.5px solid #111" : "1.5px solid transparent",
-                transition: "all 0.2s"
-              }}>{v === "calendar" ? "Cal" : v === "list" ? "List" : "Draft"}</button>
-            ))}
-            {view === "list" && (
-              <button onClick={() => { setSelectMode(s => !s); setSelected([]); setConfirmMultiDelete(false); }} style={{
-                padding: "10px 14px", background: "none", border: "none", cursor: "pointer",
-                fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
-                color: selectMode ? "#c0392b" : "#bbb",
-                borderBottom: selectMode ? "1.5px solid #c0392b" : "1.5px solid transparent",
-                transition: "all 0.2s", flexShrink: 0
-              }}>{selectMode ? "Cancel" : "Select"}</button>
-            )}
+            {["calendar", "list", "draft"].map(v => {
+              const isActive = v === view || (v === "list" && selectMode);
+              const label = v === "calendar" ? "Cal" : v === "list" ? (selectMode ? "Select" : "List") : "Draft";
+              return (
+                <button key={v} onClick={() => {
+                  if (v === "list" && selectMode) { setSelectMode(false); setSelected([]); setConfirmMultiDelete(false); return; }
+                  if (v === "list" && view === "list") {
+                    const now = Date.now();
+                    if (now - listTabLastTap.current < 350) { setSelectMode(true); setSelected([]); listTabLastTap.current = 0; }
+                    else { listTabLastTap.current = now; }
+                    return;
+                  }
+                  setView(v); setSelectMode(false); setSelected([]);
+                }} style={{
+                  flex: 1, padding: "10px 0", background: "none", border: "none", cursor: "pointer",
+                  fontSize: 9, letterSpacing: 3, textTransform: "uppercase",
+                  color: isActive ? "#111" : "#bbb",
+                  borderBottom: isActive ? "1.5px solid #111" : "1.5px solid transparent",
+                  transition: "all 0.2s"
+                }}>{label}</button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -1355,31 +1383,17 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
         const isToday = day === todayD2 && month === todayM2 && year === todayY2;
         const isSun = dow === 0, isSat = dow === 6;
         const k = dateKey(year, month, day);
-        const isSelected = selected?.includes(day);
-
         return (
           <div key={day} style={{
             display: "grid", gridTemplateColumns: `40px repeat(${MEMBERS.length}, 1fr)`,
-            borderBottom: "1px solid #f0f0ee",
-            background: isSelected ? "#f0eeec" : "#fff"
+            borderBottom: "1px solid #f0f0ee"
           }}>
             {/* Date cell */}
-            <div onClick={() => selectMode && onToggle(day)} style={{
+            <div style={{
               padding: "6px 4px", display: "flex", flexDirection: "column",
               alignItems: "center", justifyContent: "center",
-              cursor: selectMode ? "pointer" : "default",
               background: isToday ? "#111" : "transparent"
             }}>
-              {selectMode && (
-                <div style={{
-                  width: 14, height: 14, borderRadius: "50%", marginBottom: 2,
-                  border: isSelected ? "none" : "1.5px solid #ccc",
-                  background: isSelected ? "#111" : "transparent",
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
-                }}>
-                  {isSelected && <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
-                </div>
-              )}
               <span style={{ fontSize: 13, fontWeight: 300, color: isToday ? "#fff" : isSun ? "#c0392b" : isSat ? "#555" : "#111" }}>{day}</span>
               <span style={{ fontSize: 8, letterSpacing: 1, color: isToday ? "#777" : isSun ? "#c0392b" : "#bbb" }}>{WEEKDAY_JP[dow]}</span>
             </div>
@@ -1390,28 +1404,41 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
               const isOff = data?.status === "休日";
               const type = shiftType(data);
               const col = DRAFT_COLORS[type];
-              const isCurrent = m === member;
+              const cellKey = `${m}:${day}`;
+              const isCellSelected = selectMode && selected?.includes(cellKey);
 
-              const cellBg = type ? col.bg : isOff ? "#f8f7f6" : "#fff";
+              const cellBg = isCellSelected ? "#e8ecf5"
+                : type ? col.bg : isOff ? "#f8f7f6" : "#fff";
 
               return (
-                <button key={m} onClick={() => selectMode ? (isCurrent && onToggle(day)) : onDayClick(day, m)}
+                <button key={m} onClick={() => selectMode ? onToggle(m, day) : onDayClick(day, m)}
                   style={{
                     border: "none", borderLeft: "1px solid #f0f0ee", minHeight: 44,
                     background: cellBg, cursor: "pointer",
                     display: "flex", flexDirection: "column", alignItems: "center",
                     justifyContent: "center", gap: 1, padding: "4px 2px",
-                    borderTop: type ? `2px solid ${col.text}` : "2px solid transparent"
+                    borderTop: isCellSelected ? "2px solid #4c7ab5" : type ? `2px solid ${col.text}` : "2px solid transparent",
+                    position: "relative"
                   }}>
+                  {isCellSelected && (
+                    <div style={{
+                      position: "absolute", top: 3, right: 3,
+                      width: 10, height: 10, borderRadius: "50%",
+                      background: "#4c7ab5",
+                      display: "flex", alignItems: "center", justifyContent: "center"
+                    }}>
+                      <svg width="6" height="6" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                  )}
                   {type ? (
                     <>
-                      <span style={{ fontSize: 11, fontWeight: 500, color: isToday ? col.text : col.text }}>{type}</span>
-                      <span style={{ fontSize: 7, color: col.text, opacity: 0.8, lineHeight: 1 }}>{data.startTime}</span>
+                      <span style={{ fontSize: 11, fontWeight: 500, color: isCellSelected ? "#4c7ab5" : col.text }}>{type}</span>
+                      <span style={{ fontSize: 7, color: isCellSelected ? "#4c7ab5" : col.text, opacity: 0.8, lineHeight: 1 }}>{data.startTime}</span>
                     </>
                   ) : isOff ? (
-                    <span style={{ fontSize: 9, letterSpacing: 1, color: "#ccc" }}>休</span>
+                    <span style={{ fontSize: 9, letterSpacing: 1, color: isCellSelected ? "#4c7ab5" : "#ccc" }}>休</span>
                   ) : (
-                    <span style={{ fontSize: 10, color: "#ddd" }}>—</span>
+                    <span style={{ fontSize: 10, color: isCellSelected ? "#4c7ab5" : "#ddd" }}>—</span>
                   )}
                 </button>
               );
