@@ -1508,12 +1508,31 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                   }}
                   onTouchStart={e => {
                     if (selectMode) return;
-                    e.stopPropagation(); // 親の月スワイプ起点を記録させない
-                    dragRef.current.source = { m, day };
-                    setDragSrc({ m, day });
+                    e.stopPropagation();
+                    const t = e.touches[0];
+                    dragRef.current.startX = t.clientX;
+                    dragRef.current.startY = t.clientY;
+                    dragRef.current.timer = setTimeout(() => {
+                      dragRef.current.timer = null;
+                      dragRef.current.source = { m, day };
+                      setDragSrc({ m, day });
+                      if (navigator.vibrate) navigator.vibrate(40);
+                    }, 1000);
                   }}
                   onTouchMove={e => {
-                    if (!dragRef.current.source || selectMode) return;
+                    if (selectMode) return;
+                    // 指が動きすぎたら長押しキャンセル
+                    if (dragRef.current.timer) {
+                      const t = e.touches[0];
+                      const dx = t.clientX - dragRef.current.startX;
+                      const dy = t.clientY - dragRef.current.startY;
+                      if (dx * dx + dy * dy > 100) {
+                        clearTimeout(dragRef.current.timer);
+                        dragRef.current.timer = null;
+                      }
+                      return;
+                    }
+                    if (!dragRef.current.source) return;
                     const touch = e.touches[0];
                     const el = document.elementFromPoint(touch.clientX, touch.clientY);
                     const btn = el?.closest('[data-m][data-day]');
@@ -1523,11 +1542,15 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                     }
                   }}
                   onTouchEnd={e => {
+                    if (dragRef.current.timer) {
+                      clearTimeout(dragRef.current.timer);
+                      dragRef.current.timer = null;
+                    }
                     const src = dragRef.current.source;
                     dragRef.current.source = null;
                     setDragSrc(null); setDragTarget(null);
                     if (!src) return;
-                    e.stopPropagation(); // ドラッグ起点セルからのタッチは月スワイプに渡さない
+                    e.stopPropagation();
                     const touch = e.changedTouches[0];
                     const el = document.elementFromPoint(touch.clientX, touch.clientY);
                     const btn = el?.closest('[data-m][data-day]');
