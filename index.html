@@ -1413,6 +1413,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
   const [dragTarget, setDragTarget] = React.useState(null);
   const cellDblTapRef = React.useRef({ m: null, day: null, t: 0 });
   const listContainerRef = React.useRef(null);
+  const [memoPreview, setMemoPreview] = React.useState(null); // { day, text }
 
   // non-passive touchmove: prevent page scroll while dragging
   React.useEffect(() => {
@@ -1437,7 +1438,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
     <div ref={listContainerRef} style={{ background: "#fff" }}>
       {/* Sticky header */}
       <div style={{
-        display: "grid", gridTemplateColumns: `40px repeat(${MEMBERS.length}, 1fr)`,
+        display: "grid", gridTemplateColumns: `40px repeat(${MEMBERS.length}, 1fr) 24px`,
         borderBottom: "2px solid #e0dedd", background: "#fafaf9",
         position: "sticky", top: 0, zIndex: 9
       }}>
@@ -1452,6 +1453,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
             marginBottom: -2
           }}>{m}</div>
         ))}
+        <div style={{ borderLeft: "1px solid #e0dedd" }} />
       </div>
 
       {/* Rows */}
@@ -1460,9 +1462,10 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
         const isToday = day === todayD2 && month === todayM2 && year === todayY2;
         const isSun = dow === 0, isSat = dow === 6;
         const k = dateKey(year, month, day);
+        const memo = allData[member]?.[k]?.memo;
         return (
           <div key={day} style={{
-            display: "grid", gridTemplateColumns: `40px repeat(${MEMBERS.length}, 1fr)`,
+            display: "grid", gridTemplateColumns: `40px repeat(${MEMBERS.length}, 1fr) 24px`,
             borderBottom: "1px solid #f0f0ee"
           }}>
             {/* Date cell */}
@@ -1563,9 +1566,38 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                 </button>
               );
             })}
+
+            {/* Memo cell */}
+            <button onClick={() => memo && setMemoPreview(p => p?.day === day ? null : { day, text: memo })}
+              style={{
+                border: "none", borderLeft: "1px solid #f0f0ee", background: "transparent",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                cursor: memo ? "pointer" : "default", minHeight: 44, padding: 0
+              }}>
+              {memo && (
+                <span style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: memoPreview?.day === day ? "#4c7ab5" : "#111",
+                  flexShrink: 0
+                }} />
+              )}
+            </button>
           </div>
         );
       })}
+
+      {/* Memo quick preview */}
+      {memoPreview && (
+        <div onClick={() => setMemoPreview(null)} style={{
+          position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
+          background: "#111", color: "#fff", borderRadius: 10, padding: "10px 16px",
+          maxWidth: "80vw", fontSize: 12, lineHeight: 1.6, zIndex: 300,
+          whiteSpace: "pre-wrap", wordBreak: "break-all",
+          boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
+        }}>
+          {memoPreview.text}
+        </div>
+      )}
     </div>
   );
 }
