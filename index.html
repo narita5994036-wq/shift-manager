@@ -1484,6 +1484,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                   onClick={() => selectMode ? onToggle(m, day) : onDayClick(day, m)}
                   onTouchStart={e => {
                     if (selectMode) return;
+                    e.stopPropagation(); // 親の月スワイプ起点を記録させない
                     dragRef.current.source = { m, day };
                     setDragSrc({ m, day });
                   }}
@@ -1502,12 +1503,13 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                     dragRef.current.source = null;
                     setDragSrc(null); setDragTarget(null);
                     if (!src) return;
+                    e.stopPropagation(); // ドラッグ起点セルからのタッチは月スワイプに渡さない
                     const touch = e.changedTouches[0];
                     const el = document.elementFromPoint(touch.clientX, touch.clientY);
                     const btn = el?.closest('[data-m][data-day]');
                     if (btn) {
                       const tm = btn.dataset.m, td = parseInt(btn.dataset.day);
-                      if (!(src.m === tm && src.day === td)) { e.preventDefault(); onSwap(src.m, src.day, tm, td); }
+                      if (!(src.m === tm && src.day === td)) { onSwap(src.m, src.day, tm, td); }
                     }
                   }}
                   style={{
