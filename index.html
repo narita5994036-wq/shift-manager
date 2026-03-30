@@ -771,10 +771,16 @@ function ShiftManager() {
     return { work, off, totalH: hasTime ? totalH : null };
   })();
 
-  function openEdit(day) {
+  function openEdit(day, editMember = member) {
     const k = dateKey(year, month, day);
+    let src = shifts;
+    if (editMember !== member) {
+      const ym = `${year}-${String(month).padStart(2,"0")}`;
+      try { const r = storage.get(`shifts:${editMember}:${ym}`); src = r ? JSON.parse(r) : {}; } catch { src = {}; }
+      setMember(editMember);
+    }
     setEditDay(day);
-    setEditData(shifts[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
+    setEditData(src[k] || { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" });
     setConfirmDelete(false);
   }
   function navEditDay(delta) {
@@ -1389,10 +1395,10 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
               const cellBg = type ? col.bg : isOff ? "#f8f7f6" : "#fff";
 
               return (
-                <button key={m} onClick={() => isCurrent && (selectMode ? onToggle(day) : onDayClick(day))}
+                <button key={m} onClick={() => selectMode ? (isCurrent && onToggle(day)) : onDayClick(day, m)}
                   style={{
                     border: "none", borderLeft: "1px solid #f0f0ee", minHeight: 44,
-                    background: cellBg, cursor: isCurrent ? "pointer" : "default",
+                    background: cellBg, cursor: "pointer",
                     display: "flex", flexDirection: "column", alignItems: "center",
                     justifyContent: "center", gap: 1, padding: "4px 2px",
                     borderTop: type ? `2px solid ${col.text}` : "2px solid transparent"
