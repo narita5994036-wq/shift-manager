@@ -1566,8 +1566,10 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                     justifyContent: "center", gap: 1, padding: "4px 2px",
                     borderTop: isDragTgt ? "2px solid #4c7ab5" : isCellSelected ? "2px solid #999" : type ? `2px solid ${col.text}` : "2px solid transparent",
                     position: "relative", opacity: isDragSrc ? 0.35 : 1,
-                    transition: "opacity 0.1s"
-                  }}>
+                    transition: "opacity 0.1s",
+                    userSelect: "none", WebkitUserSelect: "none"
+                  }}
+                  onContextMenu={e => e.preventDefault()}>
                   {isCellSelected && (
                     <div style={{
                       position: "absolute", top: 3, right: 3,
