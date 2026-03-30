@@ -1446,7 +1446,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
             {/* Member cells */}
             {MEMBERS.map(m => {
               const data = allData[m]?.[k];
-              const isOff = data?.status === "休日";
+              const isOff = !data || data.status === "休日";
               const type = shiftType(data);
               const col = DRAFT_COLORS[type];
               const cellKey = `${m}:${day}`;
@@ -1480,10 +1480,8 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
                       <span style={{ fontSize: 11, fontWeight: 500, color: isCellSelected ? "#888" : col.text }}>{type}</span>
                       <span style={{ fontSize: 7, color: isCellSelected ? "#888" : col.text, opacity: 0.8, lineHeight: 1 }}>{data.startTime}</span>
                     </>
-                  ) : isOff ? (
-                    <span style={{ fontSize: 9, letterSpacing: 1, color: "#ccc" }}>休</span>
                   ) : (
-                    <span style={{ fontSize: 10, color: "#ddd" }}>—</span>
+                    <span style={{ fontSize: 9, letterSpacing: 1, color: "#ccc" }}>休</span>
                   )}
                 </button>
               );
