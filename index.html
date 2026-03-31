@@ -1990,8 +1990,6 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
   //  ・2人体制の日は早番+遅番の組み合わせ固定
   const res = {};
   const customTimes = {}; // { [m]: { [d]: { start, end } } }
-  // 2人体制時の特別時刻(休憩1.5h込み)
-  const TWO_TIMES = { "早": { start: 9*60+30, end: 19*60 }, "遅": { start: 11*60, end: 20*60+30 } };
   MEMBERS.forEach(m => { res[m] = {}; });
   for (let d = 1; d <= dim; d++) {
     const workers = MEMBERS.filter(m => work[m][d] === true);
@@ -2058,6 +2056,8 @@ const DRAFT_TIMES = {
   "中": { start: 10*60+30, end: 19*60+30 },
   "遅": { start: 11*60+30, end: 20*60+30 },
 };
+// 2人体制時の特別時刻
+const TWO_TIMES = { "早": { start: 9*60+30, end: 19*60 }, "遅": { start: 11*60, end: 20*60+30 } };
 const minsToTime = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${m%60===0?'00':'30'}`;
 const timeToMins = t => { const [h,mm] = t.split(':').map(Number); return h*60+mm; };
 
@@ -2076,6 +2076,8 @@ function DraftView({ year, month }) {
   const [autoFlash, setAutoFlash] = useState(false);
   const [editCell, setEditCell] = useState(null); // { m, day, startMins, endMins }
   const cellLastTap = React.useRef({ m: null, day: null, t: 0 });
+  const [activeCell, setActiveCell] = React.useState(null); // { m, day }
+  const activeCellTimer = React.useRef(null);
 
   const DK = {
     bg: "#1a1a1a", bg2: "#242424", bg3: "#2a2a2a",
@@ -2113,10 +2115,30 @@ function DraftView({ year, month }) {
     save({ ...draft, assignments: {} });
   }
 
-  function cycleShift(member, day) {
-    const cur  = draft.assignments[member]?.[day] ?? null;
+  function cycleShift(m, day) {
+    const cur  = draft.assignments[m]?.[day] ?? null;
     const next = DRAFT_TYPES[(DRAFT_TYPES.indexOf(cur) + 1) % DRAFT_TYPES.length];
-    save({ ...draft, assignments: { ...draft.assignments, [member]: { ...(draft.assignments[member] || {}), [day]: next } } });
+    const newAssign = { ...draft.assignments, [m]: { ...(draft.assignments[m] || {}), [day]: next } };
+    // 2人体制チェック: 出勤メンバー数に応じてcustomTimesを更新
+    const workers = MEMBERS.filter(mm => { const s = newAssign[mm]?.[day]; return s && s !== "休"; });
+    const ct = JSON.parse(JSON.stringify(draft.customTimes || {}));
+    if (workers.length === 2) {
+      workers.forEach(mm => {
+        const type = newAssign[mm][day];
+        if (!ct[mm]) ct[mm] = {};
+        if (TWO_TIMES[type]) ct[mm][day] = { ...TWO_TIMES[type] };
+        else delete ct[mm][day];
+      });
+    } else {
+      // 2人体制でなくなった場合、TWO_TIMESと一致するcustomTimeを削除
+      MEMBERS.forEach(mm => {
+        const entry = ct[mm]?.[day];
+        if (!entry) return;
+        const isTwoTime = Object.values(TWO_TIMES).some(t => t.start === entry.start && t.end === entry.end);
+        if (isTwoTime) { ct[mm] = { ...ct[mm] }; delete ct[mm][day]; }
+      });
+    }
+    save({ ...draft, assignments: newAssign, customTimes: ct });
   }
 
   function toggleReqOff(member, day) {
@@ -2369,8 +2391,13 @@ function DraftView({ year, month }) {
               const endM   = custom?.end   ?? defT?.end;
               const timeStr = startM != null ? `${minsToTime(startM)}-${minsToTime(endM)}` : "";
               const isEditing = editCell?.m === m && editCell?.day === day;
+              const isActive = activeCell?.m === m && activeCell?.day === day;
               return (
                 <button key={m} onClick={() => {
+                  // アクティブ表示: タップしたセルを太線でハイライト(600ms)
+                  setActiveCell({ m, day });
+                  if (activeCellTimer.current) clearTimeout(activeCellTimer.current);
+                  activeCellTimer.current = setTimeout(() => setActiveCell(null), 600);
                   if (!st || st === "休") { cycleShift(m, day); return; }
                   if (isEditing) { setEditCell(null); return; }
                   if (editCell?.m === m && editCell?.day !== day) { cycleShift(m, day); setEditCell(null); return; }
@@ -2385,10 +2412,13 @@ function DraftView({ year, month }) {
                     cycleShift(m, day);
                   }
                 }} style={{
-                  border: "none", borderLeft: `1px solid ${DK.border2}`, minHeight: 44,
+                  border: isActive ? `2px solid #e8e8e8` : "none",
+                  borderLeft: isActive ? `2px solid #e8e8e8` : `1px solid ${DK.border2}`,
+                  minHeight: 44, zIndex: isActive ? 1 : 0,
                   background: isEditing ? "#162033" : st ? col.bg : isReq ? "#2a1010" : DK.bg,
                   cursor: "pointer", display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center", gap: 1, padding: "4px 2px"
+                  alignItems: "center", justifyContent: "center", gap: 1, padding: "4px 2px",
+                  boxSizing: "border-box", position: "relative",
                 }}>
                   {st
                     ? <>
