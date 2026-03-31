@@ -2066,6 +2066,18 @@ function DraftView({ year, month }) {
   const [editCell, setEditCell] = useState(null); // { m, day, startMins, endMins }
   const cellLastTap = React.useRef({ m: null, day: null, t: 0 });
 
+  const DK = {
+    bg: "#1a1a1a", bg2: "#242424", bg3: "#2a2a2a",
+    border: "#383838", border2: "#2e2e2e",
+    text: "#e8e8e8", text2: "#888", text3: "#555",
+  };
+  const SHIFT_DK = {
+    "早": { bg: "#2a2416", text: "#c9a84c" },
+    "中": { bg: "#162033", text: "#5b8fc9" },
+    "遅": { bg: "#162219", text: "#3d9467" },
+    "休": { bg: "#252525", text: "#666" },
+  };
+
   function save(next) {
     setDraft(next);
     try { storage.set(sk, JSON.stringify(next)); } catch {}
@@ -2155,27 +2167,27 @@ function DraftView({ year, month }) {
   const rangeRow = (label, val, set, min, max, step, display, extra) => (
     <div style={{ marginBottom: 10 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-        <span style={{ fontSize: 9, color: "#aaa", letterSpacing: 1 }}>{label}</span>
-        <span style={{ fontSize: 11, color: "#111" }}>{display(val)}{extra}</span>
+        <span style={{ fontSize: 9, color: DK.text2, letterSpacing: 1 }}>{label}</span>
+        <span style={{ fontSize: 11, color: DK.text }}>{display(val)}{extra}</span>
       </div>
       <input type="range" value={val} min={min} max={max} step={step}
         onChange={e => set(Number(e.target.value))}
-        style={{ width: "100%", accentColor: "#111", height: 20 }} />
+        style={{ width: "100%", accentColor: DK.text, height: 20 }} />
     </div>
   );
 
   return (
-    <div style={{ background: "#fff" }}>
+    <div style={{ background: DK.bg }}>
       {/* ── Auto controls ── */}
-      <div style={{ padding: "10px 14px", borderBottom: "1px solid #e0dedd", background: "#fafaf9" }}>
+      <div style={{ padding: "10px 14px", borderBottom: `1px solid ${DK.border}`, background: DK.bg2 }}>
         {/* Settings row */}
         {rangeRow("目標時間", targetH, setTargetH, 140, 220, 1, v => `${v}h`,
           targetH !== defaultTargetH
             ? <button onClick={() => setTargetH(defaultTargetH)} style={{
                 background: "none", border: "none", padding: "0 0 0 8px",
-                fontSize: 9, color: "#bbb", cursor: "pointer", textDecoration: "underline"
+                fontSize: 9, color: DK.text3, cursor: "pointer", textDecoration: "underline"
               }}>週休2日({defaultTargetH}h)</button>
-            : <span style={{ fontSize: 9, color: "#bbb", marginLeft: 6 }}>
+            : <span style={{ fontSize: 9, color: DK.text3, marginLeft: 6 }}>
                 ({defaultTargetH/8}日×8h)
               </span>
         )}
@@ -2184,7 +2196,7 @@ function DraftView({ year, month }) {
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={handleAuto} style={{
             flex: 2, padding: "10px 0",
-            background: autoFlash ? "#2d6a4f" : "#111", color: "#fff",
+            background: autoFlash ? "#2d6a4f" : "#e8e8e8", color: "#111",
             border: "none", cursor: "pointer",
             fontSize: 10, letterSpacing: 3, textTransform: "uppercase",
             transition: "background 0.3s"
@@ -2193,35 +2205,35 @@ function DraftView({ year, month }) {
           </button>
           <button onClick={handleClear} style={{
             flex: 1, padding: "10px 0",
-            background: "none", color: "#aaa",
-            border: "1px solid #e0dedd", cursor: "pointer",
+            background: "none", color: DK.text2,
+            border: `1px solid ${DK.border}`, cursor: "pointer",
             fontSize: 10, letterSpacing: 2, textTransform: "uppercase"
           }}>Clear</button>
         </div>
       </div>
 
       {/* mode toggle */}
-      <div style={{ display: "flex", borderBottom: "1px solid #e0dedd", position: "sticky", top: 0, zIndex: 10, background: "#fff" }}>
+      <div style={{ display: "flex", borderBottom: `1px solid ${DK.border}`, position: "sticky", top: 0, zIndex: 10, background: DK.bg }}>
         {[["assign", "シフト組み"], ["request", "希望休設定"], ["ratio", "比率設定"]].map(([id, lbl]) => (
           <button key={id} onClick={() => setMode(id)} style={{
             flex: 1, padding: "9px 0", background: "none", border: "none", cursor: "pointer",
             fontSize: 9, letterSpacing: 2,
-            color: mode === id ? "#111" : "#bbb",
-            borderBottom: mode === id ? "1.5px solid #111" : "1.5px solid transparent",
+            color: mode === id ? DK.text : DK.text3,
+            borderBottom: mode === id ? `1.5px solid ${DK.text}` : "1.5px solid transparent",
             transition: "all 0.2s"
           }}>{lbl}</button>
         ))}
       </div>
 
       {/* member stats */}
-      <div style={{ display: "grid", gridTemplateColumns: `repeat(${MEMBERS.length}, 1fr)`, borderBottom: "1px solid #e0dedd", background: "#fafaf9" }}>
+      <div style={{ display: "grid", gridTemplateColumns: `repeat(${MEMBERS.length}, 1fr)`, borderBottom: `1px solid ${DK.border}`, background: DK.bg2 }}>
         {memberStats.map(({ m, workDays, totalH }) => {
-          const color = totalH > DRAFT_MAX_H ? "#c0392b" : totalH < targetH ? "#aaa" : "#2d6a4f";
+          const color = totalH > DRAFT_MAX_H ? "#c0392b" : totalH < targetH ? DK.text3 : "#2d6a4f";
           return (
-            <div key={m} style={{ padding: "8px 4px", textAlign: "center", borderRight: "1px solid #e0dedd" }}>
-              <div style={{ fontSize: 9, letterSpacing: 1, color: "#aaa", marginBottom: 1 }}>{m}</div>
+            <div key={m} style={{ padding: "8px 4px", textAlign: "center", borderRight: `1px solid ${DK.border}` }}>
+              <div style={{ fontSize: 9, letterSpacing: 1, color: DK.text2, marginBottom: 1 }}>{m}</div>
               <div style={{ fontSize: 12, fontWeight: 400, color }}>{totalH}h</div>
-              <div style={{ fontSize: 8, color: "#bbb" }}>{workDays}日</div>
+              <div style={{ fontSize: 8, color: DK.text3 }}>{workDays}日</div>
             </div>
           );
         })}
@@ -2229,7 +2241,7 @@ function DraftView({ year, month }) {
 
       {/* alerts */}
       {alerts.length > 0 && (
-        <div style={{ padding: "8px 12px", borderBottom: "1px solid #f0eeec", background: "#fffdf8" }}>
+        <div style={{ padding: "8px 12px", borderBottom: `1px solid ${DK.border2}`, background: "#1e1c14" }}>
           {alerts.map((a, i) => (
             <div key={i} style={{
               fontSize: 10, lineHeight: 1.9,
@@ -2243,7 +2255,7 @@ function DraftView({ year, month }) {
 
       {/* ── 比率設定パネル ── */}
       {mode === "ratio" && (
-        <div style={{ padding: "16px 14px 8px", borderBottom: "1px solid #e0dedd" }}>
+        <div style={{ padding: "16px 14px 8px", borderBottom: `1px solid ${DK.border}` }}>
           {MEMBERS.map(m => {
             const getRatio = t => draft.ratios?.[m]?.[t] ?? 3;
             const setRatio = (t, lv) => {
@@ -2251,7 +2263,7 @@ function DraftView({ year, month }) {
             };
             return (
               <div key={m} style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 11, fontWeight: 500, color: "#333", marginBottom: 8, letterSpacing: 1 }}>{m}</div>
+                <div style={{ fontSize: 11, fontWeight: 500, color: DK.text, marginBottom: 8, letterSpacing: 1 }}>{m}</div>
                 {["早", "中", "遅"].map(t => {
                   const col = DRAFT_COLORS[t];
                   const val = getRatio(t);
@@ -2265,26 +2277,26 @@ function DraftView({ year, month }) {
                           <button key={lv} onClick={() => setRatio(t, lv)} style={{
                             flex: 1, height: 22, border: "none", cursor: "pointer",
                             background: lv === 0
-                              ? (val === 0 ? "#e8e8e8" : "#f0eeec")
-                              : (lv <= val ? col.bg : "#f0eeec"),
-                            borderTop: `2px solid ${lv === 0 ? (val === 0 ? "#999" : "#ddd") : (lv <= val ? col.text : "#ddd")}`,
-                            borderBottom: `2px solid ${lv === 0 ? (val === 0 ? "#999" : "#ddd") : (lv <= val ? col.text : "#ddd")}`,
-                            borderLeft: lv === 0 ? `2px solid ${val === 0 ? "#999" : "#ddd"}` : "1px solid transparent",
-                            borderRight: lv === 5 ? `2px solid ${lv <= val ? col.text : "#ddd"}` : "1px solid transparent",
+                              ? (val === 0 ? "#3a3a3a" : "#2a2a2a")
+                              : (lv <= val ? SHIFT_DK[t].bg : "#2a2a2a"),
+                            borderTop: `2px solid ${lv === 0 ? (val === 0 ? "#777" : "#444") : (lv <= val ? col.text : "#444")}`,
+                            borderBottom: `2px solid ${lv === 0 ? (val === 0 ? "#777" : "#444") : (lv <= val ? col.text : "#444")}`,
+                            borderLeft: lv === 0 ? `2px solid ${val === 0 ? "#777" : "#444"}` : "1px solid transparent",
+                            borderRight: lv === 5 ? `2px solid ${lv <= val ? col.text : "#444"}` : "1px solid transparent",
                             transition: "all 0.1s",
                             fontSize: lv === 0 ? 9 : undefined,
-                            color: lv === 0 ? (val === 0 ? "#666" : "#ccc") : undefined,
+                            color: lv === 0 ? (val === 0 ? "#aaa" : "#555") : undefined,
                           }}>{lv === 0 ? "×" : ""}</button>
                         ))}
                       </div>
-                      <span style={{ fontSize: 9, color: val === 0 ? "#c0392b" : "#aaa", width: 28, textAlign: "right" }}>{labels[val]}</span>
+                      <span style={{ fontSize: 9, color: val === 0 ? "#c0392b" : DK.text2, width: 28, textAlign: "right" }}>{labels[val]}</span>
                     </div>
                   );
                 })}
               </div>
             );
           })}
-          <div style={{ fontSize: 9, color: "#bbb", lineHeight: 1.8, marginTop: 4 }}>
+          <div style={{ fontSize: 9, color: DK.text3, lineHeight: 1.8, marginTop: 4 }}>
             比率はAutoボタン実行時に番種の割り当てへ反映されます
           </div>
         </div>
@@ -2293,14 +2305,14 @@ function DraftView({ year, month }) {
       {/* grid header */}
       <div style={{
         display: "grid", gridTemplateColumns: `40px repeat(${MEMBERS.length}, 1fr) 28px`,
-        borderBottom: "1px solid #e0dedd", background: "#fafaf9",
+        borderBottom: `1px solid ${DK.border}`, background: DK.bg2,
         position: "sticky", top: 37, zIndex: 9
       }}>
         <div />
         {MEMBERS.map(m => (
-          <div key={m} style={{ padding: "5px 2px", fontSize: 9, color: "#888", textAlign: "center", borderLeft: "1px solid #e0dedd" }}>{m}</div>
+          <div key={m} style={{ padding: "5px 2px", fontSize: 9, color: DK.text2, textAlign: "center", borderLeft: `1px solid ${DK.border}` }}>{m}</div>
         ))}
-        <div style={{ padding: "5px 2px", fontSize: 7, color: "#bbb", textAlign: "center", borderLeft: "1px solid #e0dedd" }}>繁忙</div>
+        <div style={{ padding: "5px 2px", fontSize: 7, color: DK.text3, textAlign: "center", borderLeft: `1px solid ${DK.border}` }}>繁忙</div>
       </div>
 
       {/* grid rows */}
@@ -2312,12 +2324,12 @@ function DraftView({ year, month }) {
         return (
           <div key={day} style={{
             display: "grid", gridTemplateColumns: `40px repeat(${MEMBERS.length}, 1fr) 28px`,
-            borderBottom: "1px solid #f5f4f2",
-            background: isBusy && cnt < 3 ? "#fff8f8" : isBusy ? "#fffef5" : "#fff"
+            borderBottom: `1px solid ${DK.border2}`,
+            background: isBusy && cnt < 3 ? "#2a1010" : isBusy ? "#252015" : DK.bg
           }}>
             <div style={{ padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <span style={{ fontSize: 13, fontWeight: 300, color: isSun ? "#c0392b" : isSat ? "#555" : "#111" }}>{day}</span>
-              <span style={{ fontSize: 8, letterSpacing: 1, color: isSun ? "#c0392b" : "#bbb" }}>{WEEKDAY_JP[dow]}</span>
+              <span style={{ fontSize: 13, fontWeight: 300, color: isSun ? "#c0392b" : isSat ? "#888" : DK.text }}>{day}</span>
+              <span style={{ fontSize: 8, letterSpacing: 1, color: isSun ? "#c0392b" : DK.text3 }}>{WEEKDAY_JP[dow]}</span>
               {isBusy && <span style={{ fontSize: 7, color: cnt >= 3 ? "#2d6a4f" : "#c0392b" }}>{cnt}人</span>}
             </div>
 
@@ -2326,11 +2338,11 @@ function DraftView({ year, month }) {
                 const isReq = (draft.requestedOff[m] || []).includes(day);
                 return (
                   <button key={m} onClick={() => toggleReqOff(m, day)} style={{
-                    border: "none", borderLeft: "1px solid #f5f4f2", minHeight: 44,
-                    background: isReq ? "#fff0f0" : "#fff", cursor: "pointer",
+                    border: "none", borderLeft: `1px solid ${DK.border2}`, minHeight: 44,
+                    background: isReq ? "#2a1010" : DK.bg, cursor: "pointer",
                     display: "flex", alignItems: "center", justifyContent: "center"
                   }}>
-                    <span style={{ fontSize: isReq ? 9 : 10, color: isReq ? "#c0392b" : "#ddd", letterSpacing: isReq ? 1 : 0 }}>
+                    <span style={{ fontSize: isReq ? 9 : 10, color: isReq ? "#c0392b" : DK.text3, letterSpacing: isReq ? 1 : 0 }}>
                       {isReq ? "希望" : "—"}
                     </span>
                   </button>
@@ -2338,7 +2350,7 @@ function DraftView({ year, month }) {
               }
               const st    = draft.assignments[m]?.[day] ?? null;
               const isReq = (draft.requestedOff[m] || []).includes(day);
-              const col   = DRAFT_COLORS[st];
+              const col   = st ? SHIFT_DK[st] : null;
               // カスタム時刻 or デフォルト
               const custom = draft.customTimes?.[m]?.[day];
               const defT   = DRAFT_TIMES[st];
@@ -2362,8 +2374,8 @@ function DraftView({ year, month }) {
                     cycleShift(m, day);
                   }
                 }} style={{
-                  border: "none", borderLeft: "1px solid #f5f4f2", minHeight: 44,
-                  background: isEditing ? "#f0f8ff" : st ? col.bg : isReq ? "#fff5f5" : "#fff",
+                  border: "none", borderLeft: `1px solid ${DK.border2}`, minHeight: 44,
+                  background: isEditing ? "#162033" : st ? col.bg : isReq ? "#2a1010" : DK.bg,
                   cursor: "pointer", display: "flex", flexDirection: "column",
                   alignItems: "center", justifyContent: "center", gap: 1, padding: "4px 2px"
                 }}>
@@ -2372,15 +2384,15 @@ function DraftView({ year, month }) {
                         <span style={{ fontSize: 11, fontWeight: 500, color: col.text, lineHeight: 1 }}>{st}</span>
                         {timeStr && <span style={{ fontSize: 7, color: col.text, opacity: custom ? 1 : 0.7, letterSpacing: 0, lineHeight: 1 }}>{timeStr}</span>}
                       </>
-                    : <span style={{ fontSize: isReq ? 8 : 10, color: isReq ? "#e8a0a0" : "#ddd" }}>{isReq ? "希" : "—"}</span>
+                    : <span style={{ fontSize: isReq ? 8 : 10, color: isReq ? "#e8a0a0" : DK.text3 }}>{isReq ? "希" : "—"}</span>
                   }
                 </button>
               );
             })}
 
             <button onClick={() => toggleBusy(day)} style={{
-              border: "none", borderLeft: "1px solid #f5f4f2", minHeight: 44,
-              background: isBusy ? "#fffde0" : "#fff", cursor: "pointer",
+              border: "none", borderLeft: `1px solid ${DK.border2}`, minHeight: 44,
+              background: isBusy ? "#252015" : DK.bg, cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14
             }}>
               {isBusy ? "★" : "☆"}
@@ -2389,7 +2401,7 @@ function DraftView({ year, month }) {
         );
       })}
 
-      <div style={{ padding: "14px 16px 32px", fontSize: 10, color: "#bbb", lineHeight: 1.9, whiteSpace: "pre-line" }}>
+      <div style={{ padding: "14px 16px 32px", fontSize: 10, color: DK.text3, lineHeight: 1.9, whiteSpace: "pre-line" }}>
         {mode === "assign"
           ? "Autoで自動仮組み → 手動で微調整\nタップ: — → 早 → 中 → 遅 → 休 → —\n★ で繁忙日を設定(3人体制)\nダブルタップで出退勤時間を編集"
           : "タップして希望休を設定\n設定後にシフト組みタブでAutoを実行"}
@@ -2406,16 +2418,16 @@ function DraftView({ year, month }) {
             display: "flex", alignItems: "flex-end"
           }}>
             <div onClick={e => e.stopPropagation()} style={{
-              width: "100%", background: "#fff", borderRadius: "16px 16px 0 0",
+              width: "100%", background: DK.bg, borderRadius: "16px 16px 0 0",
               padding: "20px 20px 36px", boxSizing: "border-box"
             }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
                 <div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>{em}</span>
-                  <span style={{ fontSize: 11, color: "#888", marginLeft: 8 }}>{month}/{ed}({dowStr})</span>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: DK.text }}>{em}</span>
+                  <span style={{ fontSize: 11, color: DK.text2, marginLeft: 8 }}>{month}/{ed}({dowStr})</span>
                 </div>
                 <button onClick={() => setEditCell(null)} style={{
-                  background: "none", border: "none", fontSize: 18, color: "#aaa", cursor: "pointer", padding: 4
+                  background: "none", border: "none", fontSize: 18, color: DK.text2, cursor: "pointer", padding: 4
                 }}>✕</button>
               </div>
 
@@ -2430,7 +2442,7 @@ function DraftView({ year, month }) {
                 v => minsToTime(v), " 退勤"
               )}
 
-              <div style={{ fontSize: 10, color: "#aaa", textAlign: "center", marginBottom: 14 }}>
+              <div style={{ fontSize: 10, color: DK.text2, textAlign: "center", marginBottom: 14 }}>
                 実働 {Math.floor((endMins - startMins) / 60)}h{(endMins - startMins) % 60 ? "30" : "00"}m
               </div>
 
@@ -2445,7 +2457,7 @@ function DraftView({ year, month }) {
                 });
                 setEditCell(null);
               }} style={{
-                width: "100%", padding: "12px 0", background: "#111", color: "#fff",
+                width: "100%", padding: "12px 0", background: "#e8e8e8", color: "#111",
                 border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer"
               }}>保存</button>
             </div>
