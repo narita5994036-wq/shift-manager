@@ -1814,7 +1814,7 @@ const DRAFT_H_PER_DAY = 8;   // 9時間 − 1時間休憩
 const DRAFT_MAX_H     = 190; // 残業10h上限
 
 // ── Auto-schedule algorithm ───────────────────────────────────
-function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsecutive, ratios = {}) {
+function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsecutive, ratios = {}, training = {}) {
   const dim = new Date(year, month, 0).getDate();
   const targetDays = Math.round(targetHours / DRAFT_H_PER_DAY);
   const busySet = new Set(busyDays || []);
@@ -1984,6 +1984,23 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
     }
   }
 
+  // Phase 4.5: 研修メンバーが2人体制にならないよう3人目を追加
+  for (let d = 1; d <= dim; d++) {
+    const hasTrainee = MEMBERS.some(m => training[m] && work[m][d] === true);
+    if (!hasTrainee) continue;
+    let cnt = dayWorkers(d);
+    if (cnt >= 3) continue;
+    // 研修でない・希望休でない・まだ休のメンバーを出勤日数が少ない順に追加
+    const offMs = MEMBERS
+      .filter(m => !training[m] && work[m][d] === false && !(reqOff[m] || []).includes(d))
+      .sort((a, b) => workCount(a) - workCount(b));
+    for (const m of offMs) {
+      if (cnt >= 3) break;
+      work[m][d] = true;
+      cnt++;
+    }
+  }
+
   // Phase 5: 番種(早/中/遅)を割り当て
   //  ・各日で必ず早番を1人入れる
   //  ・同日に同じ番種が重複しない
@@ -2012,11 +2029,9 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
     const isTwoPerson = workers.length === 2;
 
     // 残りのメンバーは早番を除いた中でbestTypeを割り当て(重複なし)
-    // 2人体制の日は遅番優先(比率0なら次善の番種)
+    // 2人体制の日は遅番固定(例外なし)
     for (const m of restWorkers) {
-      const t = isTwoPerson
-        ? (!isBlocked(m, "遅") ? "遅" : bestType(m, usedTypes))
-        : bestType(m, usedTypes);
+      const t = isTwoPerson ? "遅" : bestType(m, usedTypes);
       res[m][d] = t;
       typeCnt[m][t]++;
       usedTypes.push(t);
@@ -2098,7 +2113,7 @@ function DraftView({ year, month }) {
 
   function handleAuto() {
     const { assignments: newAssign, customTimes: newCustomTimes } = buildAutoSchedule(
-      year, month, draft.requestedOff, draft.busyDays, targetH, maxCons, draft.ratios || {}
+      year, month, draft.requestedOff, draft.busyDays, targetH, maxCons, draft.ratios || {}, draft.training || {}
     );
     // Merge auto-generated customTimes with existing ones (auto only writes 2-person days)
     const mergedCustom = { ...(draft.customTimes || {}) };
@@ -2308,7 +2323,15 @@ function DraftView({ year, month }) {
             };
             return (
               <div key={m} style={{ marginBottom: 18 }}>
-                <div style={{ fontSize: 11, fontWeight: 500, color: DK.text, marginBottom: 8, letterSpacing: 1 }}>{m}</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 500, color: DK.text, letterSpacing: 1 }}>{m}</span>
+                  <button onClick={() => save({ ...draft, training: { ...(draft.training || {}), [m]: !(draft.training?.[m]) } })} style={{
+                    padding: "2px 9px", fontSize: 9, letterSpacing: 1, cursor: "pointer",
+                    background: draft.training?.[m] ? "#2a1a38" : "none",
+                    color: draft.training?.[m] ? "#b07fd4" : DK.text3,
+                    border: `1px solid ${draft.training?.[m] ? "#7b3fa0" : DK.border}`,
+                  }}>研修</button>
+                </div>
                 {["早", "中", "遅"].map(t => {
                   const col = DRAFT_COLORS[t];
                   const val = getRatio(t);
