@@ -432,6 +432,7 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
   const [staffPicker, setStaffPicker]   = useState(null);    // null | "prospects" | "repairs"
   const [purchaseFlow, setPurchaseFlow] = useState(null);    // null | { step:1 } | { step:2, salesperson }
   const [confirmReset, setConfirmReset] = useState(false);
+  const [memoCopied, setMemoCopied]     = useState(false);
 
   function persist(next) {
     setData(next);
@@ -516,6 +517,18 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
     if (rCount  > 0) { const s = staffSummary(data.repairs);   parts.push(`修理${rCount}${s ? `(${s})` : ""}`); }
     if (pCount  > 0) { const s = staffSummary(data.purchases, "salesperson"); const f = framesSummary(data.purchases); parts.push(`購入${pCount}${s ? `(${s})` : ""}${f ? `[${f}]` : ""}`); }
     return parts.join(" / ");
+  }
+
+  function copyToMemo() {
+    const memo = buildMemoLine();
+    if (!memo || !shifts || !saveShifts) return;
+    const existing = shifts[todayStr];
+    if (existing) {
+      const prev = existing.memo ? existing.memo.trim() : "";
+      saveShifts({ ...shifts, [todayStr]: { ...existing, memo: prev ? `${prev}\n${memo}` : memo } });
+    }
+    setMemoCopied(true);
+    setTimeout(() => setMemoCopied(false), 1500);
   }
 
   function reset() {
@@ -627,8 +640,20 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
         onRemove={removePurchase}
         onUpdateFrame={updatePurchaseFrame} />
 
-      {/* ── Reset ───────────────────────────────────── */}
-      <div style={{ marginTop: 10 }}>
+      {/* ── Memo / Reset ────────────────────────────── */}
+      <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 8 }}>
+        {/* メモコピーボタン */}
+        <button onClick={copyToMemo} disabled={!buildMemoLine()} style={{
+          width: "100%", padding: "12px 0",
+          background: memoCopied ? "#2d6a4f" : "none",
+          border: `1px solid ${memoCopied ? "#2d6a4f" : "#ddd"}`,
+          cursor: buildMemoLine() ? "pointer" : "default",
+          fontSize: 9, letterSpacing: 3, textTransform: "uppercase",
+          color: memoCopied ? "#fff" : buildMemoLine() ? "#555" : "#ccc",
+          transition: "all 0.2s"
+        }}>{memoCopied ? "Copied ✓" : "Copy to Memo"}</button>
+
+        {/* リセット */}
         {confirmReset ? (
           <div style={{ background: "#fff", border: "1px solid #e0dedd", padding: "16px" }}>
             <div style={{ fontSize: 11, color: "#555", marginBottom: 4, lineHeight: 1.6 }}>リセットしてメモに記録します</div>
