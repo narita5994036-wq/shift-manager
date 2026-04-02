@@ -753,10 +753,17 @@ function ShiftManager() {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const pdfData = await res.json();
-      // 名前マッピング(PDFのキー → アプリのメンバー名)
-      const NAME_MAP = { "Hiratani": "平谷", "Hiratani Syunya": "平谷" };
-      Object.entries(NAME_MAP).forEach(([from, to]) => {
-        if (pdfData[from] && !pdfData[to]) { pdfData[to] = pdfData[from]; delete pdfData[from]; }
+      // 名前マッピング(PDFのキー → アプリのメンバー名)、大文字小文字・表記ゆれを許容
+      const NAME_PATTERNS = [
+        { pattern: /hiratani/i, to: "平谷" },
+      ];
+      Object.keys(pdfData).forEach(key => {
+        NAME_PATTERNS.forEach(({ pattern, to }) => {
+          if (pattern.test(key) && key !== to) {
+            if (!pdfData[to]) pdfData[to] = pdfData[key];
+            delete pdfData[key];
+          }
+        });
       });
       // 対象月の全メンバーをクリアしてから書き込み
       const ym = `${y}-${String(m).padStart(2,"0")}`;
