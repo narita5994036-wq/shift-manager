@@ -259,6 +259,24 @@ const storage = {
   set: (key, val) => { try { localStorage.setItem(key, val); } catch {} },
 };
 
+// ── データ移行: 中谷 → 平谷 ──────────────────────────────────
+(() => {
+  if (storage.get("migration:中谷→平谷")) return;
+  try {
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (!key.startsWith("shifts:中谷:")) return;
+      const newKey = key.replace("shifts:中谷:", "shifts:平谷:");
+      const val = localStorage.getItem(key);
+      if (val && !localStorage.getItem(newKey)) {
+        localStorage.setItem(newKey, val);
+      }
+      localStorage.removeItem(key);
+    });
+    storage.set("migration:中谷→平谷", "1");
+  } catch(e) {}
+})();
+
 // ── SVG Icons ────────────────────────────────────────────────
 const IconChevronL = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg>;
 const IconChevronR = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>;
