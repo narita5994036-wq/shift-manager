@@ -753,6 +753,12 @@ function ShiftManager() {
       const res = await fetch(url);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const pdfData = await res.json();
+      console.log("PDF keys:", Object.keys(pdfData));
+      // キーの前後の空白・不可視文字を除去して正規化
+      Object.keys(pdfData).forEach(key => {
+        const trimmed = key.trim();
+        if (trimmed !== key) { pdfData[trimmed] = pdfData[key]; delete pdfData[key]; }
+      });
       // 名前マッピング(PDFのキー → アプリのメンバー名)、大文字小文字・表記ゆれを許容
       const NAME_PATTERNS = [
         { pattern: /hiratani/i, to: "平谷" },
