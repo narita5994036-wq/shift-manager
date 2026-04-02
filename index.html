@@ -756,6 +756,7 @@ function ShiftManager() {
       // 名前マッピング(PDFのキー → アプリのメンバー名)、大文字小文字・表記ゆれを許容
       const NAME_PATTERNS = [
         { pattern: /hiratani/i, to: "平谷" },
+        { pattern: /^中谷$/, to: "平谷" },
       ];
       Object.keys(pdfData).forEach(key => {
         NAME_PATTERNS.forEach(({ pattern, to }) => {
