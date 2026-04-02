@@ -754,7 +754,7 @@ function ShiftManager() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const pdfData = await res.json();
       // 名前マッピング(PDFのキー → アプリのメンバー名)
-      const NAME_MAP = { "Hiratani": "平谷" };
+      const NAME_MAP = { "Hiratani": "平谷", "Hiratani Syunya": "平谷" };
       Object.entries(NAME_MAP).forEach(([from, to]) => {
         if (pdfData[from] && !pdfData[to]) { pdfData[to] = pdfData[from]; delete pdfData[from]; }
       });
