@@ -2154,6 +2154,9 @@ function DraftView({ year, month }) {
   const cellLastTap = React.useRef({ m: null, day: null, t: 0 });
   const [activeCell, setActiveCell] = React.useState(null); // { m, day }
   const activeCellTimer = React.useRef(null);
+  const histRef = React.useRef({ past: [], future: [] });
+  const [canUndo, setCanUndo] = React.useState(false);
+  const [canRedo, setCanRedo] = React.useState(false);
 
   const DK = {
     bg: "#1a1a1a", bg2: "#242424", bg3: "#2a2a2a",
@@ -2168,6 +2171,34 @@ function DraftView({ year, month }) {
   };
 
   function save(next) {
+    const h = histRef.current;
+    h.past.push(JSON.parse(JSON.stringify(draft)));
+    if (h.past.length > 30) h.past.shift();
+    h.future = [];
+    setCanUndo(true);
+    setCanRedo(false);
+    setDraft(next);
+    try { storage.set(sk, JSON.stringify(next)); } catch {}
+  }
+
+  function undo() {
+    const h = histRef.current;
+    if (!h.past.length) return;
+    const prev = h.past.pop();
+    h.future.push(JSON.parse(JSON.stringify(draft)));
+    setCanUndo(h.past.length > 0);
+    setCanRedo(true);
+    setDraft(prev);
+    try { storage.set(sk, JSON.stringify(prev)); } catch {}
+  }
+
+  function redo() {
+    const h = histRef.current;
+    if (!h.future.length) return;
+    const next = h.future.pop();
+    h.past.push(JSON.parse(JSON.stringify(draft)));
+    setCanUndo(true);
+    setCanRedo(h.future.length > 0);
     setDraft(next);
     try { storage.set(sk, JSON.stringify(next)); } catch {}
   }
@@ -2330,6 +2361,17 @@ function DraftView({ year, month }) {
             border: `1px solid ${DK.border}`, cursor: "pointer",
             fontSize: 10, letterSpacing: 2, textTransform: "uppercase"
           }}>Clear</button>
+        </div>
+        {/* Undo / Redo */}
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          {[["← Undo", undo, canUndo], ["Redo →", redo, canRedo]].map(([label, fn, enabled]) => (
+            <button key={label} onClick={fn} disabled={!enabled} style={{
+              flex: 1, padding: "8px 0", background: "none", cursor: enabled ? "pointer" : "default",
+              border: `1px solid ${enabled ? DK.border : DK.border2}`,
+              fontSize: 9, letterSpacing: 2, textTransform: "uppercase",
+              color: enabled ? DK.text2 : DK.text3, transition: "all 0.15s"
+            }}>{label}</button>
+          ))}
         </div>
       </div>
 
@@ -2498,7 +2540,7 @@ function DraftView({ year, month }) {
                   // アクティブ表示: タップしたセルを太線でハイライト(600ms)
                   setActiveCell({ m, day });
                   if (activeCellTimer.current) clearTimeout(activeCellTimer.current);
-                  activeCellTimer.current = setTimeout(() => setActiveCell(null), 600);
+                  activeCellTimer.current = setTimeout(() => setActiveCell(null), 3000);
                   if (!st || st === "休") { cycleShift(m, day); return; }
                   if (isEditing) { setEditCell(null); return; }
                   if (editCell?.m === m && editCell?.day !== day) { cycleShift(m, day); setEditCell(null); return; }
