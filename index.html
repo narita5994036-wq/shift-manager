@@ -1875,9 +1875,10 @@ const DRAFT_H_PER_DAY = 8;   // 9時間 − 1時間休憩
 const DRAFT_MAX_H     = 190; // 残業10h上限
 
 // ── Auto-schedule algorithm ───────────────────────────────────
-function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsecutive, ratios = {}, training = {}) {
+function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsecutive, ratios = {}, training = {}, memberDays = {}) {
   const dim = new Date(year, month, 0).getDate();
-  const targetDays = Math.round(targetHours / DRAFT_H_PER_DAY);
+  const globalTargetDays = Math.round(targetHours / DRAFT_H_PER_DAY);
+  const tgtDays = m => memberDays[m] ?? globalTargetDays;
   const busySet = new Set(busyDays || []);
   const TYPES = ["早", "中", "遅"];
   const MIN_STAFF = 2;
@@ -1929,7 +1930,7 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
     let wToday = dayWorkers(d);
     for (const m of avail) {
       const cur  = workCount(m);
-      const need = targetDays - cur;
+      const need = tgtDays(m) - cur;
       if (wToday < BUSY_MIN || need > 0) {
         work[m][d] = true;
         wToday++;
@@ -1954,7 +1955,7 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
       const remaining = unassigned.length - i; // 自分を含む残り未決定人数
       const cur = workCount(m);
       const left = dim - d + 1;
-      const need = targetDays - cur;
+      const need = tgtDays(m) - cur;
       const s = streak(m, d);
 
       const maxReached = wToday >= MAX_STAFF;
@@ -1973,7 +1974,7 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
         wToday++;
       } else {
         // ペース判定: 目標ペースより遅れていれば出勤(ceil で積極的に出勤)
-        const expected = Math.ceil((targetDays / dim) * d);
+        const expected = Math.ceil((tgtDays(m) / dim) * d);
         // 前日も休だった場合は連休を避けるため出勤を優先
         const prevWasOff = d > 1 && work[m][d - 1] === false;
         if (cur < expected || prevWasOff) {
@@ -2205,7 +2206,7 @@ function DraftView({ year, month }) {
 
   function handleAuto() {
     const { assignments: newAssign, customTimes: newCustomTimes } = buildAutoSchedule(
-      year, month, draft.requestedOff, draft.busyDays, targetH, maxCons, draft.ratios || {}, draft.training || {}
+      year, month, draft.requestedOff, draft.busyDays, targetH, maxCons, draft.ratios || {}, draft.training || {}, draft.memberDays || {}
     );
     // Merge auto-generated customTimes with existing ones (auto only writes 2-person days)
     const mergedCustom = { ...(draft.customTimes || {}) };
@@ -2259,11 +2260,13 @@ function DraftView({ year, month }) {
     save({ ...draft, busyDays: cur.includes(day) ? cur.filter(d => d !== day) : [...cur, day] });
   }
 
+  const globalTgtDays = Math.round(targetH / DRAFT_H_PER_DAY);
   const memberStats = MEMBERS.map(m => {
     const asgn = draft.assignments[m] || {};
     const workDays = Array.from({ length: daysInMonth }, (_, i) => i + 1)
       .filter(d => asgn[d] && asgn[d] !== "休").length;
-    return { m, workDays, totalH: workDays * DRAFT_H_PER_DAY };
+    const memberTgtDays = draft.memberDays?.[m] ?? globalTgtDays;
+    return { m, workDays, totalH: workDays * DRAFT_H_PER_DAY, tgtH: memberTgtDays * DRAFT_H_PER_DAY };
   });
 
   const dayStaff = Array.from({ length: daysInMonth }, (_, i) => {
@@ -2272,11 +2275,11 @@ function DraftView({ year, month }) {
   });
 
   const alerts = [];
-  memberStats.forEach(({ m, totalH }) => {
+  memberStats.forEach(({ m, totalH, tgtH }) => {
     if (totalH > DRAFT_MAX_H)
       alerts.push({ t: "w", msg: `${m}: ${totalH}h — 上限(${DRAFT_MAX_H}h)超え` });
-    else if (totalH < targetH)
-      alerts.push({ t: "i", msg: `${m}: ${totalH}h — 目標まで${targetH - totalH}h不足` });
+    else if (totalH < tgtH)
+      alerts.push({ t: "i", msg: `${m}: ${totalH}h — 目標まで${tgtH - totalH}h不足` });
   });
 
   // 過労メンバーのセット(これ以上出勤させると上限超え)
@@ -2390,8 +2393,8 @@ function DraftView({ year, month }) {
 
       {/* member stats */}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${MEMBERS.length}, 1fr)`, borderBottom: `1px solid ${DK.border}`, background: DK.bg2 }}>
-        {memberStats.map(({ m, workDays, totalH }) => {
-          const color = totalH > DRAFT_MAX_H ? "#c0392b" : totalH < targetH ? DK.text3 : "#2d6a4f";
+        {memberStats.map(({ m, workDays, totalH, tgtH }) => {
+          const color = totalH > DRAFT_MAX_H ? "#c0392b" : totalH < tgtH ? DK.text3 : "#2d6a4f";
           return (
             <div key={m} style={{ padding: "8px 4px", textAlign: "center", borderRight: `1px solid ${DK.border}` }}>
               <div style={{ fontSize: 9, letterSpacing: 1, color: DK.text2, marginBottom: 1 }}>{m}</div>
@@ -2428,12 +2431,29 @@ function DraftView({ year, month }) {
               <div key={m} style={{ marginBottom: 18 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
                   <span style={{ fontSize: 11, fontWeight: 500, color: DK.text, letterSpacing: 1 }}>{m}</span>
-                  <button onClick={() => save({ ...draft, training: { ...(draft.training || {}), [m]: !(draft.training?.[m]) } })} style={{
-                    padding: "2px 9px", fontSize: 9, letterSpacing: 1, cursor: "pointer",
-                    background: draft.training?.[m] ? "#2a1a38" : "none",
-                    color: draft.training?.[m] ? "#b07fd4" : DK.text3,
-                    border: `1px solid ${draft.training?.[m] ? "#7b3fa0" : DK.border}`,
-                  }}>研修</button>
+                  <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    {/* 目標日数調整 */}
+                    {(() => {
+                      const cur = draft.memberDays?.[m] ?? globalTgtDays;
+                      const isCustom = draft.memberDays?.[m] != null;
+                      const setDays = d => save({ ...draft, memberDays: { ...(draft.memberDays || {}), [m]: d } });
+                      const resetDays = () => { const md = { ...(draft.memberDays || {}) }; delete md[m]; save({ ...draft, memberDays: md }); };
+                      return (
+                        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                          <button onClick={() => setDays(Math.max(1, cur - 1))} style={{ width: 20, height: 20, border: `1px solid ${DK.border}`, background: "none", color: DK.text2, cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0 }}>−</button>
+                          <span onClick={isCustom ? resetDays : undefined} style={{ fontSize: 10, color: isCustom ? "#c9a84c" : DK.text3, minWidth: 30, textAlign: "center", cursor: isCustom ? "pointer" : "default" }}>{cur}日</span>
+                          <button onClick={() => setDays(Math.min(daysInMonth, cur + 1))} style={{ width: 20, height: 20, border: `1px solid ${DK.border}`, background: "none", color: DK.text2, cursor: "pointer", fontSize: 12, lineHeight: 1, padding: 0 }}>＋</button>
+                        </div>
+                      );
+                    })()}
+                    {/* 研修トグル */}
+                    <button onClick={() => save({ ...draft, training: { ...(draft.training || {}), [m]: !(draft.training?.[m]) } })} style={{
+                      padding: "2px 9px", fontSize: 9, letterSpacing: 1, cursor: "pointer",
+                      background: draft.training?.[m] ? "#2a1a38" : "none",
+                      color: draft.training?.[m] ? "#b07fd4" : DK.text3,
+                      border: `1px solid ${draft.training?.[m] ? "#7b3fa0" : DK.border}`,
+                    }}>研修</button>
+                  </div>
                 </div>
                 {["早", "中", "遅"].map(t => {
                   const col = DRAFT_COLORS[t];
