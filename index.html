@@ -1734,8 +1734,8 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
         );
       })}
 
-      {/* Memo quick preview */}
-      {memoPreview && (
+      {/* Memo quick preview — portal でbody直下に描画しtransformの影響を回避 */}
+      {memoPreview && ReactDOM.createPortal(
         <div onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}
           style={{
             position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
@@ -1796,10 +1796,10 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
             );
           })}
         </div>
-      )}
+      , document.body)}
 
-      {/* Memo compose */}
-      {memoCompose && (
+      {/* Memo compose — portal */}
+      {memoCompose && ReactDOM.createPortal(
         <div onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}
           style={{
             position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)",
@@ -1858,7 +1858,7 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
               }}>保存</button>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }
