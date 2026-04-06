@@ -1333,6 +1333,7 @@ function ShiftManager() {
                 <div style={{ marginBottom: 24 }}>
                   <label style={labelSm}>Memo</label>
                   <textarea value={editData.memo} onChange={e => setEditData({ ...editData, memo: e.target.value })}
+                    onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}
                     placeholder="Add a note..." rows={2}
                     style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0dedd", fontSize: 13, resize: "none", background: "#fafaf9", outline: "none", fontWeight: 300, color: "#333", lineHeight: 1.6 }} />
                 </div>
