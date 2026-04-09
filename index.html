@@ -1576,7 +1576,8 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
               const data = allData[m]?.[k];
               const isOff = !data || data.status === "休日";
               const type = shiftType(data);
-              const col = DRAFT_COLORS[type];
+              const colKey = type === "遅" && data?.startTime === "11:00" ? "遅2" : type;
+              const col = DRAFT_COLORS[colKey];
               const cellKey = `${m}:${day}`;
               const isCellSelected = selectMode && selected?.includes(cellKey);
 
@@ -1867,10 +1868,11 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
 // ── Draft View (翌月シフト仮組み) ────────────────────────────
 const DRAFT_TYPES  = [null, "早", "中", "遅", "休"];
 const DRAFT_COLORS = {
-  "早": { bg: "#fffbee", text: "#c9a84c", time: "9:30-18:30" },
-  "中": { bg: "#eef6ff", text: "#4c7ab5", time: "10:30-19:30" },
-  "遅": { bg: "#efffef", text: "#2d6a4f", time: "11:30-20:30" },
-  "休": { bg: "#f5f4f2", text: "#bbb",    time: "" },
+  "早":  { bg: "#fffbee", text: "#c9a84c", time: "9:30-18:30" },
+  "中":  { bg: "#eef6ff", text: "#4c7ab5", time: "10:30-19:30" },
+  "遅":  { bg: "#efffef", text: "#2d6a4f", time: "11:30-20:30" },
+  "遅2": { bg: "#eafcf8", text: "#1d7a6e", time: "11:00-20:30" }, // 2人体制
+  "休":  { bg: "#f5f4f2", text: "#bbb",    time: "" },
 };
 const DRAFT_H_PER_DAY = 8;   // 9時間 − 1時間休憩
 const DRAFT_MAX_H     = 190; // 残業10h上限
@@ -2166,10 +2168,11 @@ function DraftView({ year, month }) {
     text: "#e8e8e8", text2: "#888", text3: "#555",
   };
   const SHIFT_DK = {
-    "早": { bg: "#2a2416", text: "#c9a84c" },
-    "中": { bg: "#162033", text: "#5b8fc9" },
-    "遅": { bg: "#162219", text: "#3d9467" },
-    "休": { bg: "#252525", text: "#666" },
+    "早":  { bg: "#2a2416", text: "#c9a84c" },
+    "中":  { bg: "#162033", text: "#5b8fc9" },
+    "遅":  { bg: "#162219", text: "#3d9467" },
+    "遅2": { bg: "#0f2420", text: "#2d9480" }, // 2人体制(11:00)
+    "休":  { bg: "#252525", text: "#666" },
   };
 
   function save(next) {
@@ -2547,12 +2550,12 @@ function DraftView({ year, month }) {
               }
               const st    = draft.assignments[m]?.[day] ?? null;
               const isReq = (draft.requestedOff[m] || []).includes(day);
-              const col   = st ? SHIFT_DK[st] : null;
               // カスタム時刻 or デフォルト
               const custom = draft.customTimes?.[m]?.[day];
               const defT   = DRAFT_TIMES[st];
               const startM = custom?.start ?? defT?.start;
               const endM   = custom?.end   ?? defT?.end;
+              const col    = st ? (st === "遅" && startM === TWO_TIMES["遅"].start ? SHIFT_DK["遅2"] : SHIFT_DK[st]) : null;
               const timeStr = startM != null ? `${minsToTime(startM)}-${minsToTime(endM)}` : "";
               const isEditing = editCell?.m === m && editCell?.day === day;
               const isActive = activeCell?.m === m && activeCell?.day === day;
