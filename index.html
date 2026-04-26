@@ -2077,21 +2077,26 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
   //  ・各日で必ず早番を1人入れる
   //  ・同日に同じ番種が重複しない
   //  ・2人体制の日は早番+遅番の組み合わせ固定
+  //  ・連続出勤中は同じ番種を継続（休日を挟むとリセット）
   const res = {};
   const customTimes = {}; // { [m]: { [d]: { start, end } } }
   MEMBERS.forEach(m => { res[m] = {}; });
+
+  // 直前の出勤日の番種を返す（前日が休ならnull）
+  const prevWorkType = (m, d) => (d > 1 && work[m][d - 1] === true) ? res[m][d - 1] : null;
+
   for (let d = 1; d <= dim; d++) {
     const workers = MEMBERS.filter(m => work[m][d] === true);
     const usedTypes = [];
 
-    // 早番をまず「早番のdeficitが最大 かつ 比率0でない」メンバーに割り当て
-    // 比率0でないメンバーがいなければ全員を候補にする(カバレッジ優先)
+    // 早番担当の決定: deficit順にソートしつつ、前日も早番継続中の人を優先
     const sortedByEarlyDeficit = [...workers].sort((a, b) => typeDeficit(b, "早") - typeDeficit(a, "早"));
     const earlyEligible = sortedByEarlyDeficit.filter(m => !isBlocked(m, "早"));
-    const byEarlyCount  = earlyEligible.length > 0 ? earlyEligible : sortedByEarlyDeficit;
-    // 早番担当以外の並び順(earlyWorker を先頭から除いた残り)
-    const earlyWorker   = byEarlyCount[0];
-    const restWorkers   = sortedByEarlyDeficit.filter(m => m !== earlyWorker);
+    const pool = earlyEligible.length > 0 ? earlyEligible : sortedByEarlyDeficit;
+    const earlyConts  = pool.filter(m => prevWorkType(m, d) === "早");
+    const earlyWorker = earlyConts.length > 0 ? earlyConts[0] : pool[0];
+    const restWorkers = sortedByEarlyDeficit.filter(m => m !== earlyWorker);
+
     if (earlyWorker) {
       res[earlyWorker][d] = "早";
       typeCnt[earlyWorker]["早"]++;
@@ -2100,10 +2105,18 @@ function buildAutoSchedule(year, month, reqOff, busyDays, targetHours, maxConsec
 
     const isTwoPerson = workers.length === 2;
 
-    // 残りのメンバーは早番を除いた中でbestTypeを割り当て(重複なし)
+    // 残りのメンバー: 連続出勤なら前日と同じ番種を継続、それ以外はbestType
     // 2人体制の日は遅番固定(例外なし)
     for (const m of restWorkers) {
-      const t = isTwoPerson ? "遅" : bestType(m, usedTypes);
+      let t;
+      if (isTwoPerson) {
+        t = "遅";
+      } else {
+        const prev = prevWorkType(m, d);
+        t = (prev && !usedTypes.includes(prev) && !isBlocked(m, prev))
+          ? prev
+          : bestType(m, usedTypes);
+      }
       res[m][d] = t;
       typeCnt[m][t]++;
       usedTypes.push(t);
