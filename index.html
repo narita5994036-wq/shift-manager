@@ -1453,9 +1453,10 @@ function CalendarView({ year, month, daysInMonth, firstDow, shifts, onDayClick, 
           const isOff = !data || data.status === "休日";
           const isToday = year === todayY && month === todayM && day === todayD;
           const shiftMins = (!isOff && data?.startTime) ? (() => { const [h,m] = data.startTime.split(":").map(Number); return h*60+m; })() : null;
-          const isEarly     = shiftMins !== null && shiftMins < 10 * 60;
-          const isLate      = shiftMins !== null && shiftMins >= 11 * 60;
-          const isLate2P    = isLate && shiftMins === 11 * 60; // 2人体制遅番(11:00)
+          const endMins   = (!isOff && data?.endTime)   ? (() => { const [h,m] = data.endTime.split(":").map(Number);   return h*60+m; })() : null;
+          const isLate      = endMins !== null ? endMins >= 20 * 60 + 30 : shiftMins !== null && shiftMins >= 11 * 60;
+          const isEarly     = !isLate && shiftMins !== null && shiftMins < 10 * 60;
+          const isLate2P    = isLate && shiftMins === 11 * 60;
           const isMid       = shiftMins !== null && !isEarly && !isLate;
           const barColor = isOff ? "#ddd" : isEarly ? "#c9a84c" : isLate2P ? "#1d7a6e" : isLate ? "#2d6a4f" : isMid ? "#4c7ab5" : data ? "#888" : "#eee";
           // 同じ日に出勤している他メンバー
