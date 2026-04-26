@@ -1523,9 +1523,14 @@ function ListView({ year, month, daysInMonth, shifts, onDayClick, selectMode, se
 
   const shiftType = data => {
     if (!data || data.status !== "出勤" || !data.startTime) return null;
-    const [h, m] = data.startTime.split(":").map(Number);
-    const mins = h * 60 + m;
-    return mins < 10 * 60 ? "早" : mins >= 11 * 60 ? "遅" : "中";
+    const [sh, sm] = data.startTime.split(":").map(Number);
+    const startMins = sh * 60 + sm;
+    if (data.endTime) {
+      const [eh, em] = data.endTime.split(":").map(Number);
+      const endMins = eh * 60 + em;
+      if (endMins >= 20 * 60 + 30) return "遅";
+    }
+    return startMins < 10 * 60 ? "早" : "中";
   };
 
   return (
