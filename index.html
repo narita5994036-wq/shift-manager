@@ -1574,7 +1574,9 @@ function DailyReportView({ year, month, daysInMonth }) {
         throw new Error(err.error?.message || `APIエラー ${res.status}`);
       }
       const data = await res.json();
-      setAiText(data.content?.[0]?.text || "");
+      const body = data.content?.[0]?.text || "";
+      const dateHeader = `【日報】${year}年${month}月${day}日（${WDAY[dw]}）`;
+      setAiText(`${dateHeader}\n${body}`);
     } catch (e) {
       setGenError(e.message);
     } finally {
