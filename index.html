@@ -1443,6 +1443,12 @@ function DailyReportView({ year, month, daysInMonth }) {
   const [report, setReport]           = React.useState(null);
   const [salesMode, setSalesMode]     = React.useState("value");
   const [copied, setCopied]           = React.useState(false);
+  const [apiKey, setApiKey]           = React.useState(() => localStorage.getItem("anthropic_api_key") || "");
+  const [showApiKey, setShowApiKey]   = React.useState(false);
+  const [apiKeyInput, setApiKeyInput] = React.useState("");
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [genError, setGenError]       = React.useState(null);
+  const [aiText, setAiText]           = React.useState("");
 
   const targetKey = `dailyreport:target:${ym}`;
   const dayKey    = d => `dailyreport:${year}-${pad(month)}-${pad(d)}`;
@@ -1466,6 +1472,7 @@ function DailyReportView({ year, month, daysInMonth }) {
       if (r) { const d = JSON.parse(r); setReport(d); setSalesMode(d.salesAmount != null ? "value" : "status"); }
       else { setReport(emptyReport()); setSalesMode("value"); }
     } catch { setReport(emptyReport()); }
+    setAiText(""); setGenError(null);
   }, [year, month, day]);
 
   const save = React.useCallback((patch) => {
@@ -1514,12 +1521,65 @@ function DailyReportView({ year, month, daysInMonth }) {
   };
 
   const handleCopy = () => {
-    const text = buildSummary();
+    const text = aiText || buildSummary();
     if (!text) return;
     navigator.clipboard?.writeText(text).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     });
+  };
+
+  const generateReport = async () => {
+    if (!apiKey) { setShowApiKey(true); setApiKeyInput(""); return; }
+    const dw = new Date(year, month - 1, day).getDay();
+    const parts = [];
+    if (report.salesAmount != null) parts.push(`純売上: ¥${Number(report.salesAmount).toLocaleString()}`);
+    else if (report.salesStatus) parts.push(`売上状況: ${report.salesStatus === "achieved" ? "目標達成" : "目標未達成"}`);
+    if (report.visitorCount) {
+      const vl = { many: "多", medium: "中", few: "少" }[report.visitorCount];
+      const cl = report.congestionType === "all_day" ? "終日混雑" : report.congestionType === "temporary" ? "一時的に混雑" : null;
+      parts.push(`来店者数: ${vl}${cl ? `（${cl}）` : ""}`);
+    }
+    if (report.freeText?.trim()) parts.push(report.freeText.trim());
+    if (report.trainingText?.trim()) parts.push(`研修・申し送り: ${report.trainingText.trim()}`);
+    if (!parts.length) return;
+
+    const inputText = `${year}年${month}月${day}日（${WDAY[dw]}）\n${parts.join("\n")}`;
+    setIsGenerating(true); setGenError(null);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5",
+          max_tokens: 1024,
+          system: `あなたは小売店舗スタッフの日報作成を補助するアシスタントです。
+スタッフから提供されるメモや箇条書きの情報を、丁寧でプロフェッショナルな日本語のビジネス文章（日報）に変換してください。以下のスタイルで作成してください：
+- です・ます調の丁寧な敬語表現
+- 一日を振り返る報告体（「〜の一日となりました」「〜となりました」等）
+- 売上情報・来客状況・気づき・研修内容を自然な流れでまとめる
+- 前向きで建設的なトーン
+- 150〜250文字程度にまとめる
+- 本文のみを出力（ヘッダーや日付・【】等の記号は不要）`,
+          messages: [{ role: "user", content: inputText }]
+        })
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error?.message || `APIエラー ${res.status}`);
+      }
+      const data = await res.json();
+      setAiText(data.content?.[0]?.text || "");
+    } catch (e) {
+      setGenError(e.message);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const SectionLabel = ({ label }) => (
@@ -1684,28 +1744,78 @@ function DailyReportView({ year, month, daysInMonth }) {
         {/* まとめテキスト */}
         {(() => {
           const summary = buildSummary();
-          const hasContent = summary.split("\n").length > 1;
+          const hasStructured = summary.split("\n").length > 1;
+          const displayText = aiText || (hasStructured ? summary : "");
+          const hasContent = !!displayText;
+          const hasInput = hasStructured;
           return (
             <div style={{ marginBottom: 32 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <SectionLabel label="まとめテキスト" />
-                <button
-                  onClick={handleCopy}
-                  disabled={!hasContent}
-                  style={{
-                    padding: "5px 14px", border: "none", borderRadius: 6, cursor: hasContent ? "pointer" : "default",
-                    background: copied ? "#27ae60" : hasContent ? "#111" : "#e0e0e0",
-                    color: "#fff", fontSize: 10, letterSpacing: 1, transition: "background 0.2s"
-                  }}>
-                  {copied ? "コピー済" : "コピー"}
-                </button>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button onClick={generateReport} disabled={isGenerating || !hasInput}
+                    style={{
+                      padding: "5px 14px", border: "none", borderRadius: 6,
+                      cursor: (isGenerating || !hasInput) ? "default" : "pointer",
+                      background: isGenerating ? "#ccc" : hasInput ? "#4c7ab5" : "#e0e0e0",
+                      color: "#fff", fontSize: 10, letterSpacing: 0.5, transition: "background 0.2s",
+                      display: "flex", alignItems: "center", gap: 5
+                    }}>
+                    {isGenerating ? (
+                      <><span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />生成中…</>
+                    ) : "AI日報"}
+                  </button>
+                  <button onClick={handleCopy} disabled={!hasContent}
+                    style={{
+                      padding: "5px 14px", border: "none", borderRadius: 6, cursor: hasContent ? "pointer" : "default",
+                      background: copied ? "#27ae60" : hasContent ? "#111" : "#e0e0e0",
+                      color: "#fff", fontSize: 10, letterSpacing: 1, transition: "background 0.2s"
+                    }}>
+                    {copied ? "コピー済" : "コピー"}
+                  </button>
+                </div>
               </div>
+              {genError && (
+                <div style={{ marginBottom: 8, padding: "8px 12px", background: "#fff5f5", border: "1px solid #fcc", borderRadius: 6, fontSize: 11, color: "#c0392b" }}>
+                  {genError}
+                </div>
+              )}
               <div style={{
-                background: "#f8f8f8", borderRadius: 8, padding: "12px 14px",
+                background: aiText ? "#f0f6ff" : "#f8f8f8", borderRadius: 8, padding: "12px 14px",
                 fontSize: 13, lineHeight: 1.8, color: hasContent ? "#111" : "#bbb",
-                whiteSpace: "pre-wrap", minHeight: 80, letterSpacing: 0.3
+                whiteSpace: "pre-wrap", minHeight: 80, letterSpacing: 0.3,
+                border: aiText ? "1px solid #d0e4f7" : "none"
               }}>
-                {hasContent ? summary : "入力内容がありません"}
+                {hasContent ? displayText : "入力内容がありません"}
+              </div>
+              {aiText && (
+                <button onClick={() => setAiText("")}
+                  style={{ marginTop: 6, background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#bbb", letterSpacing: 0.5 }}>
+                  AIテキストをクリア
+                </button>
+              )}
+              {/* API Key 設定 */}
+              <div style={{ marginTop: 16 }}>
+                <button onClick={() => { setShowApiKey(v => !v); setApiKeyInput(apiKey); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#ccc", letterSpacing: 0.5 }}>
+                  {showApiKey ? "▲ APIキー設定を閉じる" : `▼ APIキー設定${apiKey ? "（設定済）" : "（未設定）"}`}
+                </button>
+                {showApiKey && (
+                  <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+                    <input type="password" value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)}
+                      placeholder="sk-ant-..." autoComplete="off"
+                      style={{ flex: 1, border: "1px solid #e0e0e0", borderRadius: 6, padding: "6px 10px", fontSize: 12, outline: "none", fontFamily: "monospace" }} />
+                    <button onClick={() => {
+                      localStorage.setItem("anthropic_api_key", apiKeyInput);
+                      setApiKey(apiKeyInput);
+                      setShowApiKey(false);
+                    }} style={{ background: "#111", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 11, cursor: "pointer" }}>保存</button>
+                    {apiKey && <button onClick={() => {
+                      localStorage.removeItem("anthropic_api_key");
+                      setApiKey(""); setApiKeyInput(""); setShowApiKey(false);
+                    }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#e74c3c" }}>削除</button>}
+                  </div>
+                )}
               </div>
             </div>
           );
