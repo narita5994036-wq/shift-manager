@@ -1442,6 +1442,7 @@ function DailyReportView({ year, month, daysInMonth }) {
   const [targetInput, setTargetInput] = React.useState("");
   const [report, setReport]           = React.useState(null);
   const [salesMode, setSalesMode]     = React.useState("value");
+  const [copied, setCopied]           = React.useState(false);
 
   const targetKey = `dailyreport:target:${ym}`;
   const dayKey    = d => `dailyreport:${year}-${pad(month)}-${pad(d)}`;
@@ -1491,6 +1492,35 @@ function DailyReportView({ year, month, daysInMonth }) {
   const fmtYen  = n => n != null ? `¥${Number(n).toLocaleString()}` : "—";
   const progress = monthTarget && report.salesAmount != null ? Math.round(report.salesAmount / monthTarget * 100) : null;
   const WDAY = ["日","月","火","水","木","金","土"];
+
+  const buildSummary = () => {
+    if (!report) return "";
+    const dw = new Date(year, month - 1, day).getDay();
+    const lines = [`【日報】${year}年${month}月${day}日（${WDAY[dw]}）`];
+    if (report.salesAmount != null) {
+      const p = monthTarget ? ` / 目標比${Math.round(report.salesAmount / monthTarget * 100)}%` : "";
+      lines.push(`売上: ${fmtYen(report.salesAmount)}${p}`);
+    } else if (report.salesStatus) {
+      lines.push(`売上: ${report.salesStatus === "achieved" ? "目標達成" : "目標未達成"}`);
+    }
+    if (report.visitorCount) {
+      const vl = { many: "多", medium: "中", few: "少" }[report.visitorCount];
+      const cl = report.congestionType === "all_day" ? "終日混雑" : report.congestionType === "temporary" ? "一時的に混雑" : null;
+      lines.push(`来客: ${vl}${cl ? `（${cl}）` : ""}`);
+    }
+    if (report.freeText?.trim()) lines.push(`備考: ${report.freeText.trim()}`);
+    if (report.trainingText?.trim()) lines.push(`研修: ${report.trainingText.trim()}`);
+    return lines.join("\n");
+  };
+
+  const handleCopy = () => {
+    const text = buildSummary();
+    if (!text) return;
+    navigator.clipboard?.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    });
+  };
 
   const SectionLabel = ({ label }) => (
     <div style={{ fontSize: 9, letterSpacing: 2, color: "#aaa", textTransform: "uppercase", marginBottom: 10 }}>{label}</div>
@@ -1650,6 +1680,36 @@ function DailyReportView({ year, month, daysInMonth }) {
             placeholder="研修内容・申し送り事項など"
             style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 13, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111" }} />
         </div>
+
+        {/* まとめテキスト */}
+        {(() => {
+          const summary = buildSummary();
+          const hasContent = summary.split("\n").length > 1;
+          return (
+            <div style={{ marginBottom: 32 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                <SectionLabel label="まとめテキスト" />
+                <button
+                  onClick={handleCopy}
+                  disabled={!hasContent}
+                  style={{
+                    padding: "5px 14px", border: "none", borderRadius: 6, cursor: hasContent ? "pointer" : "default",
+                    background: copied ? "#27ae60" : hasContent ? "#111" : "#e0e0e0",
+                    color: "#fff", fontSize: 10, letterSpacing: 1, transition: "background 0.2s"
+                  }}>
+                  {copied ? "コピー済" : "コピー"}
+                </button>
+              </div>
+              <div style={{
+                background: "#f8f8f8", borderRadius: 8, padding: "12px 14px",
+                fontSize: 13, lineHeight: 1.8, color: hasContent ? "#111" : "#bbb",
+                whiteSpace: "pre-wrap", minHeight: 80, letterSpacing: 0.3
+              }}>
+                {hasContent ? summary : "入力内容がありません"}
+              </div>
+            </div>
+          );
+        })()}
 
       </div>
     </div>
