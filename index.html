@@ -1443,6 +1443,7 @@ function DailyReportView({ year, month, daysInMonth }) {
   const [report, setReport]           = React.useState(null);
   const [salesMode, setSalesMode]     = React.useState("value");
   const [copied, setCopied]           = React.useState(false);
+  const dayScrollRef                  = React.useRef(null);
   const [apiKey, setApiKey]           = React.useState(() => localStorage.getItem("anthropic_api_key") || "");
   const [showApiKey, setShowApiKey]   = React.useState(false);
   const [apiKeyInput, setApiKeyInput] = React.useState("");
@@ -1493,6 +1494,13 @@ function DailyReportView({ year, month, daysInMonth }) {
     }
     return set;
   }, [year, month, daysInMonth, report]);
+
+  React.useLayoutEffect(() => {
+    const el = dayScrollRef.current;
+    if (!el) return;
+    const itemW = 36; // 34px button + 2px gap
+    el.scrollLeft = Math.max(0, (day - 1) * itemW - el.offsetWidth / 2 + itemW / 2);
+  }, [year, month]);
 
   if (!report) return null;
 
@@ -1634,7 +1642,7 @@ function DailyReportView({ year, month, daysInMonth }) {
       </div>
 
       {/* 日付セレクター */}
-      <div style={{ overflowX: "auto", padding: "10px 16px 6px", display: "flex", gap: 2, scrollbarWidth: "none" }}>
+      <div ref={dayScrollRef} style={{ overflowX: "auto", padding: "10px 16px 6px", display: "flex", gap: 2, scrollbarWidth: "none" }}>
         {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
           const dw = new Date(year, month - 1, d).getDay();
           const isSelected = d === day;
