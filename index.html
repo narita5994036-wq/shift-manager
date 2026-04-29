@@ -1100,9 +1100,9 @@ function ShiftManager() {
 
           {/* Tabs */}
           <div style={{ display: "flex", borderTop: "1px solid #e0dedd", alignItems: "center" }}>
-            {["calendar", "list", "draft"].map(v => {
+            {["calendar", "list", "draft", "report"].map(v => {
               const isActive = v === view || (v === "list" && selectMode);
-              const label = v === "calendar" ? "Cal" : v === "list" ? (selectMode ? "Select" : "List") : "Draft";
+              const label = v === "calendar" ? "Cal" : v === "list" ? (selectMode ? "Select" : "List") : v === "draft" ? "Draft" : "日報";
               return (
                 <button key={v} onClick={() => {
                   if (v === "list" && selectMode) { setSelectMode(false); setSelected([]); setConfirmMultiDelete(false); return; }
@@ -1129,28 +1129,30 @@ function ShiftManager() {
       {/* ── Content ────────────────────────────────── */}
       {view === "counter"
         ? <CounterView member={member} year={year} month={month} shifts={shifts} saveShifts={saveShifts} />
-        : <div
-            key={`${year}-${month}`}
-            className={slideDir === "left" ? "slide-in-left" : slideDir === "right" ? "slide-in-right" : ""}
-            style={{ paddingBottom: selectMode ? 80 : 20, padding: "20px 16px" }}
-            onTouchStart={e => { const t = e.touches[0]; e.currentTarget._tx = t.clientX; e.currentTarget._ty = t.clientY; }}
-            onTouchEnd={e => {
-              const dx = e.changedTouches[0].clientX - e.currentTarget._tx;
-              const dy = e.changedTouches[0].clientY - e.currentTarget._ty;
-              if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-                if (dx < 0) nextMonth(); else prevMonth();
+        : view === "report"
+          ? <DailyReportView year={year} month={month} daysInMonth={daysInMonth} />
+          : <div
+              key={`${year}-${month}`}
+              className={slideDir === "left" ? "slide-in-left" : slideDir === "right" ? "slide-in-right" : ""}
+              style={{ paddingBottom: selectMode ? 80 : 20, padding: "20px 16px" }}
+              onTouchStart={e => { const t = e.touches[0]; e.currentTarget._tx = t.clientX; e.currentTarget._ty = t.clientY; }}
+              onTouchEnd={e => {
+                const dx = e.changedTouches[0].clientX - e.currentTarget._tx;
+                const dy = e.changedTouches[0].clientY - e.currentTarget._ty;
+                if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+                  if (dx < 0) nextMonth(); else prevMonth();
+                }
+              }}
+            >
+              {!loaded
+                ? <div style={{ textAlign: "center", padding: 60, fontSize: 11, letterSpacing: 2, color: "#bbb", textTransform: "uppercase" }}>Loading</div>
+                : view === "calendar"
+                  ? <CalendarView year={year} month={month} daysInMonth={daysInMonth} firstDow={firstDow} shifts={shifts} onDayClick={openEdit} allShifts={allShifts} />
+                  : view === "list"
+                    ? <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} allShifts={allShifts} member={member} onSwap={swapCells} onSaveMemo={saveMemo} />
+                    : <DraftView year={year} month={month} />
               }
-            }}
-          >
-            {!loaded
-              ? <div style={{ textAlign: "center", padding: 60, fontSize: 11, letterSpacing: 2, color: "#bbb", textTransform: "uppercase" }}>Loading</div>
-              : view === "calendar"
-                ? <CalendarView year={year} month={month} daysInMonth={daysInMonth} firstDow={firstDow} shifts={shifts} onDayClick={openEdit} allShifts={allShifts} />
-                : view === "list"
-                  ? <ListView year={year} month={month} daysInMonth={daysInMonth} shifts={shifts} onDayClick={openEdit} selectMode={selectMode} selected={selected} onToggle={toggleSelect} allShifts={allShifts} member={member} onSwap={swapCells} onSaveMemo={saveMemo} />
-                  : <DraftView year={year} month={month} />
-            }
-          </div>
+            </div>
       }
 
       {/* ── Multi Delete Bar ───────────────────────── */}
@@ -1421,6 +1423,235 @@ function ShiftManager() {
         </svg>
       </button>}
 
+    </div>
+  );
+}
+
+// ── Daily Report View ────────────────────────────────────────
+function DailyReportView({ year, month, daysInMonth }) {
+  const today = new Date();
+  const todayY = today.getFullYear(), todayM = today.getMonth() + 1, todayD = today.getDate();
+  const pad = n => String(n).padStart(2, "0");
+  const ym = `${year}-${pad(month)}`;
+
+  const [day, setDay]             = React.useState(() =>
+    year === todayY && month === todayM ? todayD : 1
+  );
+  const [monthTarget, setMonthTarget] = React.useState(null);
+  const [editTarget, setEditTarget]   = React.useState(false);
+  const [targetInput, setTargetInput] = React.useState("");
+  const [report, setReport]           = React.useState(null);
+  const [salesMode, setSalesMode]     = React.useState("value");
+
+  const targetKey = `dailyreport:target:${ym}`;
+  const dayKey    = d => `dailyreport:${year}-${pad(month)}-${pad(d)}`;
+
+  React.useEffect(() => {
+    const init = year === todayY && month === todayM ? todayD : 1;
+    setDay(Math.min(init, daysInMonth));
+    setEditTarget(false);
+  }, [year, month]);
+
+  React.useEffect(() => {
+    try { const r = storage.get(targetKey); setMonthTarget(r ? (JSON.parse(r).target ?? null) : null); }
+    catch { setMonthTarget(null); }
+  }, [year, month]);
+
+  const emptyReport = () => ({ salesAmount: null, salesStatus: null, visitorCount: null, congestionType: null, freeText: "", trainingText: "" });
+
+  React.useEffect(() => {
+    try {
+      const r = storage.get(dayKey(day));
+      if (r) { const d = JSON.parse(r); setReport(d); setSalesMode(d.salesAmount != null ? "value" : "status"); }
+      else { setReport(emptyReport()); setSalesMode("value"); }
+    } catch { setReport(emptyReport()); }
+  }, [year, month, day]);
+
+  const save = React.useCallback((patch) => {
+    setReport(prev => {
+      const next = { ...prev, ...patch };
+      storage.set(dayKey(day), JSON.stringify(next));
+      return next;
+    });
+  }, [year, month, day]);
+
+  const dotDays = React.useMemo(() => {
+    const set = {};
+    for (let d = 1; d <= daysInMonth; d++) {
+      try {
+        const r = storage.get(dayKey(d));
+        if (r) { const o = JSON.parse(r); set[d] = !!(o.salesAmount != null || o.salesStatus || o.visitorCount || o.freeText || o.trainingText); }
+      } catch {}
+    }
+    return set;
+  }, [year, month, daysInMonth, report]);
+
+  if (!report) return null;
+
+  const fmtYen  = n => n != null ? `¥${Number(n).toLocaleString()}` : "—";
+  const progress = monthTarget && report.salesAmount != null ? Math.round(report.salesAmount / monthTarget * 100) : null;
+  const WDAY = ["日","月","火","水","木","金","土"];
+
+  const SectionLabel = ({ label }) => (
+    <div style={{ fontSize: 9, letterSpacing: 2, color: "#aaa", textTransform: "uppercase", marginBottom: 10 }}>{label}</div>
+  );
+  const ChoiceBtn = ({ active, color = "#111", bgActive = "#111", textActive = "#fff", onClick, children, style = {} }) => (
+    <button onClick={onClick} style={{
+      flex: 1, padding: "9px 0", border: `1.5px solid ${active ? color : "#e0e0e0"}`,
+      borderRadius: 8, background: active ? bgActive : "transparent",
+      color: active ? textActive : "#aaa", fontSize: 12, cursor: "pointer", ...style
+    }}>{children}</button>
+  );
+
+  return (
+    <div style={{ background: "#fff", minHeight: "100vh", paddingBottom: 80 }}>
+
+      {/* 月間日割り目標 */}
+      <div style={{ padding: "16px 16px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+          <SectionLabel label="月間日割り目標" />
+          {!editTarget && (
+            <button onClick={() => { setEditTarget(true); setTargetInput(monthTarget != null ? String(monthTarget) : ""); }}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#bbb", letterSpacing: 1 }}>
+              編集
+            </button>
+          )}
+        </div>
+        {editTarget ? (
+          <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 14 }}>
+            <span style={{ fontSize: 14, color: "#555" }}>¥</span>
+            <input type="number" value={targetInput} onChange={e => setTargetInput(e.target.value)}
+              placeholder="例: 50000" autoFocus
+              style={{ flex: 1, border: "none", borderBottom: "1.5px solid #111", fontSize: 20, padding: "4px 0", outline: "none" }} />
+            <button onClick={() => {
+              const num = parseInt(targetInput.replace(/,/g, ""), 10);
+              const val = isNaN(num) ? null : num;
+              setMonthTarget(val);
+              storage.set(targetKey, JSON.stringify({ target: val }));
+              setEditTarget(false);
+            }} style={{ background: "#111", color: "#fff", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 11, cursor: "pointer" }}>保存</button>
+            <button onClick={() => setEditTarget(false)}
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#999" }}>取消</button>
+          </div>
+        ) : (
+          <div style={{ fontSize: 22, fontWeight: 300, letterSpacing: 1, marginBottom: 14 }}>
+            {monthTarget != null ? fmtYen(monthTarget) : <span style={{ color: "#ccc", fontSize: 13 }}>未設定</span>}
+          </div>
+        )}
+        <div style={{ height: 1, background: "#f0f0ee" }} />
+      </div>
+
+      {/* 日付セレクター */}
+      <div style={{ overflowX: "auto", padding: "10px 16px 6px", display: "flex", gap: 2, scrollbarWidth: "none" }}>
+        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(d => {
+          const dw = new Date(year, month - 1, d).getDay();
+          const isSelected = d === day;
+          const isToday = year === todayY && month === todayM && d === todayD;
+          return (
+            <button key={d} onClick={() => setDay(d)} style={{
+              minWidth: 34, height: 50, flexShrink: 0, border: "none", borderRadius: 8, cursor: "pointer",
+              background: isSelected ? "#111" : "transparent",
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2
+            }}>
+              <span style={{ fontSize: 7, color: isSelected ? "#777" : dw === 0 ? "#e74c3c" : dw === 6 ? "#888" : "#bbb" }}>{WDAY[dw]}</span>
+              <span style={{ fontSize: 13, fontWeight: isToday ? 600 : 300, color: isSelected ? "#fff" : "#111" }}>{d}</span>
+              <div style={{ width: 4, height: 4, borderRadius: "50%", background: dotDays[d] ? (isSelected ? "#fff" : "#111") : "transparent" }} />
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ height: 1, background: "#f0f0ee", margin: "0 16px 16px" }} />
+
+      {/* フォーム */}
+      <div style={{ padding: "0 16px" }}>
+
+        {/* 純売上 */}
+        <div style={{ marginBottom: 22 }}>
+          <SectionLabel label="純売上" />
+          <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+            {[["value", "数値入力"], ["status", "達成 / 未達成"]].map(([mode, label]) => (
+              <button key={mode} onClick={() => {
+                setSalesMode(mode);
+                if (mode === "value") save({ salesStatus: null });
+                else save({ salesAmount: null });
+              }} style={{
+                flex: 1, padding: "6px 0", border: "1px solid",
+                borderColor: salesMode === mode ? "#111" : "#e0e0e0",
+                borderRadius: 6, background: salesMode === mode ? "#111" : "transparent",
+                color: salesMode === mode ? "#fff" : "#aaa", fontSize: 10, cursor: "pointer"
+              }}>{label}</button>
+            ))}
+          </div>
+          {salesMode === "value" ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 16, color: "#555" }}>¥</span>
+              <input type="number" value={report.salesAmount ?? ""} placeholder="0"
+                onChange={e => { const v = e.target.value === "" ? null : parseInt(e.target.value, 10); save({ salesAmount: isNaN(v) ? null : v }); }}
+                style={{ flex: 1, border: "none", borderBottom: "1.5px solid #e0e0e0", fontSize: 22, padding: "4px 0", outline: "none" }} />
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: 8 }}>
+              <ChoiceBtn active={report.salesStatus === "achieved"} color="#27ae60" bgActive="#27ae60"
+                onClick={() => save({ salesStatus: report.salesStatus === "achieved" ? null : "achieved" })}>達成</ChoiceBtn>
+              <ChoiceBtn active={report.salesStatus === "not_achieved"} color="#e74c3c" bgActive="#e74c3c"
+                onClick={() => save({ salesStatus: report.salesStatus === "not_achieved" ? null : "not_achieved" })}>未達成</ChoiceBtn>
+            </div>
+          )}
+          {progress != null && (
+            <div style={{ marginTop: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#aaa", marginBottom: 4 }}>
+                <span>目標比</span><span style={{ color: progress >= 100 ? "#27ae60" : "#c9a84c" }}>{progress}%</span>
+              </div>
+              <div style={{ height: 3, background: "#f0f0ee", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${Math.min(progress, 100)}%`, background: progress >= 100 ? "#27ae60" : "#c9a84c", borderRadius: 2, transition: "width 0.3s" }} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 来店者数 */}
+        <div style={{ marginBottom: 22 }}>
+          <SectionLabel label="来店者数" />
+          <div style={{ display: "flex", gap: 8, marginBottom: report.visitorCount ? 10 : 0 }}>
+            {[["many", "多"], ["medium", "中"], ["few", "少"]].map(([val, label]) => (
+              <ChoiceBtn key={val} active={report.visitorCount === val}
+                onClick={() => save({ visitorCount: report.visitorCount === val ? null : val, congestionType: report.visitorCount === val ? null : report.congestionType })}>
+                {label}
+              </ChoiceBtn>
+            ))}
+          </div>
+          {report.visitorCount && (
+            <div style={{ display: "flex", gap: 8 }}>
+              {[["all_day", "終日混雑"], ["temporary", "一時的に混雑"]].map(([val, label]) => (
+                <ChoiceBtn key={val} active={report.congestionType === val}
+                  color="#4c7ab5" bgActive="#eef6ff" textActive="#4c7ab5"
+                  onClick={() => save({ congestionType: report.congestionType === val ? null : val })}>
+                  {label}
+                </ChoiceBtn>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* 自由入力 */}
+        <div style={{ marginBottom: 22 }}>
+          <SectionLabel label="自由入力" />
+          <textarea value={report.freeText} rows={3}
+            onChange={e => save({ freeText: e.target.value })}
+            placeholder="今日の状況・特記事項など"
+            style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 13, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111" }} />
+        </div>
+
+        {/* 研修 */}
+        <div style={{ marginBottom: 22 }}>
+          <SectionLabel label="研修" />
+          <textarea value={report.trainingText} rows={3}
+            onChange={e => save({ trainingText: e.target.value })}
+            placeholder="研修内容・申し送り事項など"
+            style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 13, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111" }} />
+        </div>
+
+      </div>
     </div>
   );
 }
