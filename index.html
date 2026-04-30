@@ -1500,7 +1500,7 @@ function DailyReportView({ year, month, daysInMonth }) {
     if (!el) return;
     const itemW = 36; // 34px button + 2px gap
     el.scrollLeft = Math.max(0, (day - 1) * itemW - el.offsetWidth / 2 + itemW / 2);
-  }, [year, month]);
+  }, [year, month, !!report]);
 
   if (!report) return null;
 
