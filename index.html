@@ -1444,9 +1444,20 @@ function DailyReportView({ year, month, daysInMonth }) {
   const [salesMode, setSalesMode]     = React.useState("value");
   const [copied, setCopied]           = React.useState(false);
   const dayScrollRef                  = React.useRef(null);
+  const DEFAULT_PROMPT = `あなたは小売店舗スタッフの日報作成を補助するアシスタントです。
+スタッフから提供されるメモや箇条書きの情報を、丁寧でプロフェッショナルな日本語のビジネス文章（日報）に変換してください。以下のスタイルで作成してください：
+- です・ます調の丁寧な敬語表現
+- 一日を振り返る報告体（「〜の一日となりました」「〜となりました」等）
+- 売上情報・来客状況・気づき・研修内容を自然な流れでまとめる
+- 前向きで建設的なトーン
+- 150〜250文字程度にまとめる
+- 本文のみを出力（ヘッダーや日付・【】等の記号は不要）`;
   const [apiKey, setApiKey]           = React.useState(() => localStorage.getItem("anthropic_api_key") || "");
   const [showApiKey, setShowApiKey]   = React.useState(false);
   const [apiKeyInput, setApiKeyInput] = React.useState("");
+  const [systemPrompt, setSystemPrompt] = React.useState(() => localStorage.getItem("anthropic_system_prompt") || "");
+  const [showPrompt, setShowPrompt]   = React.useState(false);
+  const [promptInput, setPromptInput] = React.useState("");
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [genError, setGenError]       = React.useState(null);
   const [aiText, setAiText]           = React.useState("");
@@ -1566,14 +1577,7 @@ function DailyReportView({ year, month, daysInMonth }) {
         body: JSON.stringify({
           model: "claude-haiku-4-5",
           max_tokens: 1024,
-          system: `あなたは小売店舗スタッフの日報作成を補助するアシスタントです。
-スタッフから提供されるメモや箇条書きの情報を、丁寧でプロフェッショナルな日本語のビジネス文章（日報）に変換してください。以下のスタイルで作成してください：
-- です・ます調の丁寧な敬語表現
-- 一日を振り返る報告体（「〜の一日となりました」「〜となりました」等）
-- 売上情報・来客状況・気づき・研修内容を自然な流れでまとめる
-- 前向きで建設的なトーン
-- 150〜250文字程度にまとめる
-- 本文のみを出力（ヘッダーや日付・【】等の記号は不要）`,
+          system: systemPrompt.trim() || DEFAULT_PROMPT,
           messages: [{ role: "user", content: inputText }]
         })
       });
@@ -1824,6 +1828,33 @@ function DailyReportView({ year, month, daysInMonth }) {
                       localStorage.removeItem("anthropic_api_key");
                       setApiKey(""); setApiKeyInput(""); setShowApiKey(false);
                     }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#e74c3c" }}>削除</button>}
+                  </div>
+                )}
+              </div>
+              {/* プロンプト設定 */}
+              <div style={{ marginTop: 8 }}>
+                <button onClick={() => { setShowPrompt(v => !v); setPromptInput(systemPrompt || DEFAULT_PROMPT); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#ccc", letterSpacing: 0.5 }}>
+                  {showPrompt ? "▲ プロンプト設定を閉じる" : `▼ プロンプト設定${systemPrompt ? "（カスタム）" : "（デフォルト）"}`}
+                </button>
+                {showPrompt && (
+                  <div style={{ marginTop: 8 }}>
+                    <textarea value={promptInput} onChange={e => setPromptInput(e.target.value)} rows={8}
+                      style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 6, padding: "8px 10px", fontSize: 12, outline: "none", resize: "vertical", boxSizing: "border-box", fontFamily: "inherit", lineHeight: 1.6, color: "#111" }} />
+                    <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                      <button onClick={() => {
+                        localStorage.setItem("anthropic_system_prompt", promptInput);
+                        setSystemPrompt(promptInput);
+                        setShowPrompt(false);
+                      }} style={{ background: "#111", color: "#fff", border: "none", borderRadius: 6, padding: "6px 14px", fontSize: 11, cursor: "pointer" }}>保存</button>
+                      <button onClick={() => {
+                        setPromptInput(DEFAULT_PROMPT);
+                      }} style={{ background: "none", border: "1px solid #e0e0e0", borderRadius: 6, padding: "6px 14px", fontSize: 11, cursor: "pointer", color: "#888" }}>デフォルトに戻す</button>
+                      {systemPrompt && <button onClick={() => {
+                        localStorage.removeItem("anthropic_system_prompt");
+                        setSystemPrompt(""); setShowPrompt(false);
+                      }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#e74c3c" }}>リセット</button>}
+                    </div>
                   </div>
                 )}
               </div>
