@@ -78,9 +78,9 @@
       "memo": ""
     },
     "2026-06-12": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
+      "status": "出勤",
+      "startTime": "10:30",
+      "endTime": "19:30",
       "breakTime": 60,
       "memo": ""
     },
@@ -92,9 +92,9 @@
       "memo": ""
     },
     "2026-06-14": {
-      "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
