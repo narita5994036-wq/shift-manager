@@ -708,6 +708,13 @@ function ShiftManager() {
   const [loaded, setLoaded]       = useState(false);
   const [pdfLoadState, setPdfLoadState] = useState(null); // null | "loading" | "done" | "error"
   const [showPdfGuide, setShowPdfGuide] = useState(false);
+  const [githubToken, setGithubToken] = useState(() => localStorage.getItem("github_pat") || "");
+  const [showGithubToken, setShowGithubToken] = useState(false);
+  const [githubTokenInput, setGithubTokenInput] = useState("");
+  const [uploadState, setUploadState] = useState(null); // null | "uploading" | "done" | "error"
+  const [uploadError, setUploadError] = useState(null);
+  const [showManualSteps, setShowManualSteps] = useState(false);
+  const pdfFileInputRef = React.useRef(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selected, setSelected] = useState([]);
@@ -816,6 +823,50 @@ function ShiftManager() {
       console.error(e);
       setPdfLoadState("error");
       setTimeout(() => setPdfLoadState(null), 3000);
+    }
+  }
+
+  async function uploadPDFToGitHub(file, y, m) {
+    if (!githubToken) { setShowGithubToken(true); setGithubTokenInput(""); return; }
+    setUploadState("uploading"); setUploadError(null);
+    const filename = `shift_${y}-${String(m).padStart(2,"0")}.pdf`;
+    const apiUrl = `https://api.github.com/repos/narita5994036-wq/shift-manager/contents/${filename}`;
+    try {
+      const buf = await file.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let binary = "";
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+
+      let sha;
+      const getRes = await fetch(apiUrl, {
+        headers: { Authorization: `Bearer ${githubToken}`, Accept: "application/vnd.github+json" }
+      });
+      if (getRes.ok) { sha = (await getRes.json()).sha; }
+
+      const putRes = await fetch(apiUrl, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${githubToken}`,
+          Accept: "application/vnd.github+json",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: `Upload ${filename}`,
+          content: base64,
+          branch: "main",
+          ...(sha ? { sha } : {})
+        })
+      });
+      if (!putRes.ok) {
+        const err = await putRes.json().catch(() => ({}));
+        throw new Error(err.message || `HTTP ${putRes.status}`);
+      }
+      setUploadState("done");
+      setTimeout(() => setUploadState(null), 3000);
+    } catch (e) {
+      setUploadError(e.message);
+      setUploadState("error");
     }
   }
 
@@ -1351,10 +1402,10 @@ function ShiftManager() {
       {showPdfGuide && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 200 }}
           onClick={() => setShowPdfGuide(false)}>
-          <div style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 44px" }}
+          <div style={{ background: "#fff", width: "100%", maxWidth: 480, padding: "28px 24px 44px", maxHeight: "85vh", overflowY: "auto", boxSizing: "border-box" }}
             onClick={e => e.stopPropagation()}>
             <div style={{ fontSize: 9, letterSpacing: 4, color: "#aaa", textTransform: "uppercase", marginBottom: 4 }}>PDF 読込</div>
-            <div style={{ fontSize: 20, fontWeight: 300, marginBottom: 20 }}>GitHubアップロード手順</div>
+            <div style={{ fontSize: 20, fontWeight: 300, marginBottom: 20 }}>シフトPDFの取込</div>
 
             <a href="https://timecard1.smaregi.jp/shifts/schedule/0/current/2" target="_blank" rel="noopener noreferrer"
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -1367,26 +1418,80 @@ function ShiftManager() {
               <span style={{ fontSize: 16, color: "#4c7ab5" }}>→</span>
             </a>
 
-            <div style={{ marginBottom: 20, padding: "10px 14px", background: "#f5f4f2", borderLeft: "2px solid #111" }}>
-              <div style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>ファイル名のルール</div>
-              <div style={{ fontFamily: "monospace", fontSize: 13, color: "#111" }}>shift_YYYY-MM.pdf</div>
-              <div style={{ marginTop: 4, fontSize: 11, color: "#888" }}>例: shift_2026-04.pdf（4月分）</div>
+            {/* PDFアップロード */}
+            <div style={{ marginBottom: 20, padding: 14, background: "#f5f4f2", borderLeft: "2px solid #111" }}>
+              <div style={{ fontSize: 9, letterSpacing: 3, textTransform: "uppercase", color: "#999", marginBottom: 6 }}>PDFをアップロード</div>
+              <div style={{ fontFamily: "monospace", fontSize: 12, color: "#111", marginBottom: 10 }}>
+                shift_{year}-{String(month).padStart(2,"0")}.pdf として保存
+              </div>
+              <input ref={pdfFileInputRef} type="file" accept="application/pdf,.pdf" style={{ display: "none" }}
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) uploadPDFToGitHub(file, year, month);
+                  e.target.value = "";
+                }} />
+              <button onClick={() => pdfFileInputRef.current?.click()} disabled={uploadState === "uploading"}
+                style={{
+                  width: "100%", padding: "10px 0", border: "none", borderRadius: 6,
+                  cursor: uploadState === "uploading" ? "default" : "pointer",
+                  background: uploadState === "done" ? "#2d6a4f" : uploadState === "uploading" ? "#ccc" : "#111",
+                  color: "#fff", fontSize: 11, letterSpacing: 1
+                }}>
+                {uploadState === "uploading" ? "アップロード中…" : uploadState === "done" ? "アップロード完了 ✓" : "ファイルを選択してアップロード"}
+              </button>
+              {uploadState === "error" && (
+                <div style={{ marginTop: 8, fontSize: 11, color: "#c0392b" }}>{uploadError}</div>
+              )}
+              {uploadState === "done" && (
+                <div style={{ marginTop: 8, fontSize: 11, color: "#888" }}>Actions完了後（約1分）に「読み込む」をタップしてください</div>
+              )}
+              {/* GitHub トークン設定 */}
+              <div style={{ marginTop: 10 }}>
+                <button onClick={() => { setShowGithubToken(v => !v); setGithubTokenInput(githubToken); }}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#bbb", letterSpacing: 0.5 }}>
+                  {showGithubToken ? "▲ GitHubトークン設定を閉じる" : `▼ GitHubトークン設定${githubToken ? "（設定済）" : "（未設定）"}`}
+                </button>
+                {showGithubToken && (
+                  <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+                    <input type="password" value={githubTokenInput} onChange={e => setGithubTokenInput(e.target.value)}
+                      placeholder="ghp_..." autoComplete="off"
+                      style={{ flex: 1, border: "1px solid #e0e0e0", borderRadius: 6, padding: "6px 10px", fontSize: 12, outline: "none", fontFamily: "monospace" }} />
+                    <button onClick={() => {
+                      localStorage.setItem("github_pat", githubTokenInput);
+                      setGithubToken(githubTokenInput);
+                      setShowGithubToken(false);
+                    }} style={{ background: "#111", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 11, cursor: "pointer" }}>保存</button>
+                    {githubToken && <button onClick={() => {
+                      localStorage.removeItem("github_pat");
+                      setGithubToken(""); setGithubTokenInput(""); setShowGithubToken(false);
+                    }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "#e74c3c" }}>削除</button>}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div style={{ fontSize: 12, color: "#555", lineHeight: 1.9, marginBottom: 20 }}>
-              {[
-                ["01", "GitHubリポジトリを開く"],
-                ["02", "「data」フォルダを開く"],
-                ["03", "「Add file」→「Upload files」をタップ"],
-                ["04", `shift_${year}-${String(month).padStart(2,"0")}.pdf をアップロード`],
-                ["05", "「Commit changes」で確定"],
-                ["06", "Actions完了後（約1分）に読み込む"],
-              ].map(([n, s]) => (
-                <div key={n} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 8 }}>
-                  <span style={{ fontSize: 9, color: "#bbb", minWidth: 20, letterSpacing: 1 }}>{n}</span>
-                  <span style={{ flex: 1 }}>{s}</span>
+            {/* 手動アップロード（フォールバック） */}
+            <div style={{ marginBottom: 20 }}>
+              <button onClick={() => setShowManualSteps(v => !v)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#bbb", letterSpacing: 0.5, padding: 0 }}>
+                {showManualSteps ? "▲ 手動アップロード手順を閉じる" : "▼ 手動でアップロードする場合"}
+              </button>
+              {showManualSteps && (
+                <div style={{ fontSize: 12, color: "#555", lineHeight: 1.9, marginTop: 12 }}>
+                  {[
+                    ["01", "GitHubリポジトリを開く"],
+                    ["02", "「Add file」→「Upload files」をタップ"],
+                    ["03", `shift_${year}-${String(month).padStart(2,"0")}.pdf をアップロード`],
+                    ["04", "「Commit changes」で確定"],
+                    ["05", "Actions完了後（約1分）に読み込む"],
+                  ].map(([n, s]) => (
+                    <div key={n} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 8 }}>
+                      <span style={{ fontSize: 9, color: "#bbb", minWidth: 20, letterSpacing: 1 }}>{n}</span>
+                      <span style={{ flex: 1 }}>{s}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
 
             <div style={{ display: "flex", gap: 8 }}>
