@@ -1541,9 +1541,9 @@ const JUNBAN_KPI_OPTIONS = [
 ];
 
 function mkDynItem() { return { uid: Math.random().toString(36).slice(2,7), label: "", achieved: null, failReason: "", improvement: "", achieveReason: "", goodPractice: "" }; }
-function mkPersonal() { return { achieved: null, failReason: "", improvement: "", achieveReason: "", goodPractice: "" }; }
+function mkPersonal() { return { achieved: null, goalText: "", targetValue: "", actualValue: "", failReason: "", improvement: "", achieveReason: "", goodPractice: "" }; }
 function migrateItem(it) {
-  return { failReason: it.failReason ?? it.reflection ?? "", improvement: it.improvement ?? "", achieveReason: it.achieveReason ?? "", goodPractice: it.goodPractice ?? "", ...it };
+  return { goalText: "", targetValue: "", actualValue: "", failReason: it.failReason ?? it.reflection ?? "", improvement: it.improvement ?? "", achieveReason: it.achieveReason ?? "", goodPractice: it.goodPractice ?? "", ...it };
 }
 
 const DEFAULT_JUNBAN_PROMPT = `あなたは小売店舗スタッフの週次KPI報告（週報）作成を補助するアシスタントです。
@@ -1721,12 +1721,16 @@ function JunbanView() {
         if (it.goodPractice?.trim())  parts.push(`グッドプラクティス: ${it.goodPractice.trim()}`);
       }
     });
-    const ps = personal.achieved === true ? "達成" : personal.achieved === false ? "未達" : "未入力";
-    parts.push(`▼ 個人目標（${ps}）`);
-    if (personal.achieved === false) {
+    const hasNumP = personal.targetValue !== "" && personal.actualValue !== "" && !isNaN(Number(personal.targetValue)) && !isNaN(Number(personal.actualValue));
+    const pAchieved = hasNumP ? Number(personal.actualValue) >= Number(personal.targetValue) : personal.achieved;
+    const ps = pAchieved === true ? "達成" : pAchieved === false ? "未達" : "未入力";
+    const psGoal = personal.goalText?.trim() ? ` 目標:${personal.goalText.trim()}` : "";
+    const psNum = hasNumP ? ` 目標値:${personal.targetValue} 実績値:${personal.actualValue}` : "";
+    parts.push(`▼ 個人目標（${ps}）${psGoal}${psNum}`);
+    if (pAchieved === false) {
       if (personal.failReason?.trim())  parts.push(`未達理由と反省点: ${personal.failReason.trim()}`);
       if (personal.improvement?.trim()) parts.push(`改善策と次週の取り組み: ${personal.improvement.trim()}`);
-    } else if (personal.achieved === true) {
+    } else if (pAchieved === true) {
       if (personal.achieveReason?.trim()) parts.push(`達成理由: ${personal.achieveReason.trim()}`);
       if (personal.goodPractice?.trim())  parts.push(`グッドプラクティス: ${personal.goodPractice.trim()}`);
     }
@@ -1867,37 +1871,78 @@ function JunbanView() {
         )}
 
         {/* 個人目標（固定） */}
-        <div style={{ marginBottom: 28 }}>
-          <SL label="個人目標" />
-          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-            {toggleBtn(personal.achieved, "#27ae60", "達成", () => updatePersonal({ achieved: personal.achieved === true ? null : true }))}
-            {toggleBtn(personal.achieved, "#e74c3c", "未達", () => updatePersonal({ achieved: personal.achieved === false ? null : false }))}
-          </div>
-          {personal.achieved === false && (
-            <React.Fragment>
-              <FieldRow label="未達理由と反省点" genKey="personal-failReason"
-                value={personal.failReason} rows={3} placeholder="目標への取り組み・達成できなかった要因など"
-                onChange={e => updatePersonal({ failReason: e.target.value })}
-                onGenerate={() => generateField("personal-failReason", "個人目標", personal.achieved, personal.failReason, "failReason", txt => updatePersonal({ failReason: txt }))} />
-              <FieldRow label="改善策と次週の取り組み" genKey="personal-improvement"
-                value={personal.improvement} rows={3} placeholder="次週に向けての具体的な取り組みなど"
-                onChange={e => updatePersonal({ improvement: e.target.value })}
-                onGenerate={() => generateField("personal-improvement", "個人目標", personal.achieved, personal.improvement, "improvement", txt => updatePersonal({ improvement: txt }))} />
-            </React.Fragment>
-          )}
-          {personal.achieved === true && (
-            <React.Fragment>
-              <FieldRow label="達成理由" genKey="personal-achieveReason"
-                value={personal.achieveReason} rows={3} placeholder="達成できた取り組み・要因など"
-                onChange={e => updatePersonal({ achieveReason: e.target.value })}
-                onGenerate={() => generateField("personal-achieveReason", "個人目標", personal.achieved, personal.achieveReason, "achieveReason", txt => updatePersonal({ achieveReason: txt }))} />
-              <FieldRow label="実施したグッドプラクティス" genKey="personal-goodPractice"
-                value={personal.goodPractice} rows={3} placeholder="次週以降に活かせる良い取り組みなど"
-                onChange={e => updatePersonal({ goodPractice: e.target.value })}
-                onGenerate={() => generateField("personal-goodPractice", "個人目標", personal.achieved, personal.goodPractice, "goodPractice", txt => updatePersonal({ goodPractice: txt }))} />
-            </React.Fragment>
-          )}
-        </div>
+        {(() => {
+          const hasNum = personal.targetValue !== "" && personal.actualValue !== "" && !isNaN(Number(personal.targetValue)) && !isNaN(Number(personal.actualValue));
+          const pAchieved = hasNum ? Number(personal.actualValue) >= Number(personal.targetValue) : personal.achieved;
+          const pLabel = personal.goalText?.trim() ? `個人目標（${personal.goalText.trim()}）` : "個人目標";
+          return (
+            <div style={{ marginBottom: 28 }}>
+              <SL label="個人目標" />
+
+              {/* 目標記述欄 */}
+              <input type="text" value={personal.goalText}
+                onChange={e => updatePersonal({ goalText: e.target.value })}
+                placeholder="今週の個人目標を入力"
+                style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", marginBottom: 8 }} />
+
+              {/* 数値入力 */}
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 10, color: "#bbb", marginBottom: 4, letterSpacing: 0.3 }}>目標数値</div>
+                  <input type="number" value={personal.targetValue}
+                    onChange={e => updatePersonal({ targetValue: e.target.value })}
+                    placeholder="—"
+                    style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "9px 12px", fontSize: 12, outline: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111" }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 10, color: "#bbb", marginBottom: 4, letterSpacing: 0.3 }}>実績数値</div>
+                  <input type="number" value={personal.actualValue}
+                    onChange={e => updatePersonal({ actualValue: e.target.value })}
+                    placeholder="—"
+                    style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "9px 12px", fontSize: 12, outline: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111" }} />
+                </div>
+              </div>
+
+              {/* 達成/未達: 数値あり→自動判定、数値なし→手動 */}
+              {hasNum ? (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 10, padding: "9px 12px", borderRadius: 8, background: pAchieved ? "#edf8f2" : "#fef0f0", border: `1px solid ${pAchieved ? "#b2dfca" : "#f5c6c6"}` }}>
+                  <span style={{ fontSize: 13, fontWeight: 600, color: pAchieved ? "#27ae60" : "#e74c3c" }}>{pAchieved ? "達成" : "未達"}</span>
+                  <span style={{ fontSize: 11, color: "#aaa" }}>{personal.actualValue} / {personal.targetValue}</span>
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  {toggleBtn(personal.achieved, "#27ae60", "達成", () => updatePersonal({ achieved: personal.achieved === true ? null : true }))}
+                  {toggleBtn(personal.achieved, "#e74c3c", "未達", () => updatePersonal({ achieved: personal.achieved === false ? null : false }))}
+                </div>
+              )}
+
+              {pAchieved === false && (
+                <React.Fragment>
+                  <FieldRow label="未達理由と反省点" genKey="personal-failReason"
+                    value={personal.failReason} rows={3} placeholder="目標への取り組み・達成できなかった要因など"
+                    onChange={e => updatePersonal({ failReason: e.target.value })}
+                    onGenerate={() => generateField("personal-failReason", pLabel, pAchieved, personal.failReason, "failReason", txt => updatePersonal({ failReason: txt }))} />
+                  <FieldRow label="改善策と次週の取り組み" genKey="personal-improvement"
+                    value={personal.improvement} rows={3} placeholder="次週に向けての具体的な取り組みなど"
+                    onChange={e => updatePersonal({ improvement: e.target.value })}
+                    onGenerate={() => generateField("personal-improvement", pLabel, pAchieved, personal.improvement, "improvement", txt => updatePersonal({ improvement: txt }))} />
+                </React.Fragment>
+              )}
+              {pAchieved === true && (
+                <React.Fragment>
+                  <FieldRow label="達成理由" genKey="personal-achieveReason"
+                    value={personal.achieveReason} rows={3} placeholder="達成できた取り組み・要因など"
+                    onChange={e => updatePersonal({ achieveReason: e.target.value })}
+                    onGenerate={() => generateField("personal-achieveReason", pLabel, pAchieved, personal.achieveReason, "achieveReason", txt => updatePersonal({ achieveReason: txt }))} />
+                  <FieldRow label="実施したグッドプラクティス" genKey="personal-goodPractice"
+                    value={personal.goodPractice} rows={3} placeholder="次週以降に活かせる良い取り組みなど"
+                    onChange={e => updatePersonal({ goodPractice: e.target.value })}
+                    onGenerate={() => generateField("personal-goodPractice", pLabel, pAchieved, personal.goodPractice, "goodPractice", txt => updatePersonal({ goodPractice: txt }))} />
+                </React.Fragment>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* AI 週報生成 */}
