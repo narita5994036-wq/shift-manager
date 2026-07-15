@@ -1562,35 +1562,38 @@ const DEFAULT_JUNBAN_PROMPT = `あなたは小売店舗スタッフの週次KPI�
 - 未達項目がない場合はその見出しは省略
 - 本文のみ出力（余分なマークダウン・記号は不要）`;
 
-function weekStartStr(date) {
+const PERIOD_STARTS = [1, 8, 15, 22];
+
+function periodStartStr(date) {
   const d = new Date(date);
-  const dow = d.getDay();
-  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
-  return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
+  const day = d.getDate();
+  const sd = day < 8 ? 1 : day < 15 ? 8 : day < 22 ? 15 : 22;
+  return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(sd).padStart(2,"0")].join("-");
 }
 
-function addWeeks(str, n) {
+function addPeriods(str, n) {
   const d = new Date(str + "T00:00:00");
-  d.setDate(d.getDate() + n * 7);
-  return weekStartStr(d);
+  let pn = PERIOD_STARTS.indexOf(d.getDate());
+  if (pn === -1) pn = 0;
+  let year = d.getFullYear(), month = d.getMonth();
+  let next = pn + n;
+  while (next < 0) { next += 4; month--; if (month < 0) { month = 11; year--; } }
+  while (next >= 4) { next -= 4; month++; if (month > 11) { month = 0; year++; } }
+  return [year, String(month+1).padStart(2,"0"), String(PERIOD_STARTS[next]).padStart(2,"0")].join("-");
 }
 
-function formatWeekRange(startStr) {
-  const WD = ["日","月","火","水","木","金","土"];
-  const s = new Date(startStr + "T00:00:00");
-  const e = new Date(startStr + "T00:00:00");
-  e.setDate(e.getDate() + 6);
-  const sm = s.getMonth()+1, sd = s.getDate();
-  const em = e.getMonth()+1, ed = e.getDate();
-  const range = sm === em
-    ? `${sm}月${sd}日（${WD[s.getDay()]}）〜${ed}日（${WD[e.getDay()]}）`
-    : `${sm}月${sd}日（${WD[s.getDay()]}）〜${em}月${ed}日（${WD[e.getDay()]}）`;
-  return `${s.getFullYear()}年${range}`;
+function formatPeriodRange(startStr) {
+  const d = new Date(startStr + "T00:00:00");
+  const year = d.getFullYear(), month = d.getMonth()+1, sd = d.getDate();
+  const pn = PERIOD_STARTS.indexOf(sd) + 1;
+  const lastDay = new Date(year, d.getMonth()+1, 0).getDate();
+  const ed = sd === 22 ? lastDay : sd + 6;
+  return `${year}年${month}月 第${pn}週（${sd}日〜${ed}日）`;
 }
 
 function JunbanView() {
   const today = new Date();
-  const [weekStart, setWeekStart] = React.useState(() => weekStartStr(today));
+  const [weekStart, setWeekStart] = React.useState(() => periodStartStr(today));
   const [dynItems, setDynItems]   = React.useState(null);
   const [personal, setPersonal]   = React.useState(null);
   const [aiText, setAiText]       = React.useState("");
@@ -1656,7 +1659,7 @@ function JunbanView() {
   const generateReport = async () => {
     if (!apiKey) { setShowApiKey(true); setApiKeyInput(""); return; }
     if (!dynItems || !personal) return;
-    const parts = [`週次報告 ${formatWeekRange(weekStart)}`];
+    const parts = [`週次報告 ${formatPeriodRange(weekStart)}`];
     dynItems.forEach(it => {
       if (!it.label) return;
       const status = it.achieved === true ? "達成" : it.achieved === false ? "未達" : "未入力";
@@ -1698,7 +1701,7 @@ function JunbanView() {
 
   if (!dynItems || !personal) return null;
 
-  const isThisWeek = weekStart === weekStartStr(today);
+  const isThisWeek = weekStart === periodStartStr(today);
   const SL = ({ label }) => (
     <div style={{ fontSize: 9, letterSpacing: 2, color: "#aaa", textTransform: "uppercase", marginBottom: 8 }}>{label}</div>
   );
@@ -1719,14 +1722,14 @@ function JunbanView() {
       {/* 週セレクター */}
       <div style={{ padding: "16px 16px 0" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <button onClick={() => setWeekStart(w => addWeeks(w, -1))}
+          <button onClick={() => setWeekStart(w => addPeriods(w, -1))}
             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#bbb", padding: "0 8px", lineHeight: 1 }}>‹</button>
           <div style={{ textAlign: "center" }}>
             <div style={{ fontSize: 9, letterSpacing: 3, color: "#ccc", textTransform: "uppercase", marginBottom: 3 }}>WEEKLY REPORT</div>
-            <div style={{ fontSize: 13, fontWeight: 300, color: "#111" }}>{formatWeekRange(weekStart)}</div>
+            <div style={{ fontSize: 13, fontWeight: 300, color: "#111" }}>{formatPeriodRange(weekStart)}</div>
             {isThisWeek && <div style={{ fontSize: 8, color: "#4c7ab5", marginTop: 3, letterSpacing: 1 }}>今週</div>}
           </div>
-          <button onClick={() => setWeekStart(w => addWeeks(w, 1))}
+          <button onClick={() => setWeekStart(w => addPeriods(w, 1))}
             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#bbb", padding: "0 8px", lineHeight: 1 }}>›</button>
         </div>
         <div style={{ height: 1, background: "#f0f0ee" }} />
