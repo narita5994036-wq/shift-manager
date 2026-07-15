@@ -1153,7 +1153,7 @@ function ShiftManager() {
           <div style={{ display: "flex", borderTop: "1px solid #e0dedd", alignItems: "center" }}>
             {["calendar", "list", "draft", "report", "junban"].map(v => {
               const isActive = v === view || (v === "list" && selectMode);
-              const label = v === "calendar" ? "Cal" : v === "list" ? (selectMode ? "Select" : "List") : v === "draft" ? "Draft" : v === "report" ? "日報" : "順番";
+              const label = v === "calendar" ? "Cal" : v === "list" ? (selectMode ? "Select" : "List") : v === "draft" ? "Draft" : v === "report" ? "日報" : "週報";
               return (
                 <button key={v} onClick={() => {
                   if (v === "list" && selectMode) { setSelectMode(false); setSelected([]); setConfirmMultiDelete(false); return; }
@@ -1535,13 +1535,15 @@ function ShiftManager() {
 }
 
 // ── Junban View ──────────────────────────────────────────────
-const DEFAULT_JUNBAN_ITEMS = [
-  { id: "visitors", label: "来店者数" },
-  { id: "tryon",    label: "試着数" },
-  { id: "personal", label: "個人目標" },
+const JUNBAN_KPI_OPTIONS = [
+  "全体売上", "新規客売上", "顧客売上",
+  "新規来店者数", "顧客来店者数", "フレーム試着者数",
 ];
 
-const DEFAULT_JUNBAN_PROMPT = `あなたは小売店舗スタッフの週次KPI報告（順番）作成を補助するアシスタントです。
+function mkDynItem() { return { uid: Math.random().toString(36).slice(2,7), label: "", achieved: null, reflection: "", improvement: "" }; }
+function mkPersonal() { return { achieved: null, reflection: "", improvement: "" }; }
+
+const DEFAULT_JUNBAN_PROMPT = `あなたは小売店舗スタッフの週次KPI報告（週報）作成を補助するアシスタントです。
 スタッフが入力したKPIの達成・未達状況と振り返りメモを、以下の構造でプロフェッショナルな日本語業務報告書に変換してください。
 
 出力フォーマット（未達項目がある場合）:
@@ -1589,7 +1591,8 @@ function formatWeekRange(startStr) {
 function JunbanView() {
   const today = new Date();
   const [weekStart, setWeekStart] = React.useState(() => weekStartStr(today));
-  const [items, setItems]         = React.useState(null);
+  const [dynItems, setDynItems]   = React.useState(null);
+  const [personal, setPersonal]   = React.useState(null);
   const [aiText, setAiText]       = React.useState("");
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [genError, setGenError]   = React.useState(null);
@@ -1603,21 +1606,46 @@ function JunbanView() {
   React.useEffect(() => {
     try {
       const saved = storage.get(storageKey);
-      setItems(saved ? JSON.parse(saved) : DEFAULT_JUNBAN_ITEMS.map(d => ({ ...d, achieved: null, reflection: "", improvement: "" })));
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.v === 2) {
+          setDynItems(parsed.dynamic);
+          setPersonal(parsed.personal);
+        } else {
+          setDynItems([mkDynItem()]); setPersonal(mkPersonal());
+        }
+      } else {
+        setDynItems([mkDynItem()]); setPersonal(mkPersonal());
+      }
     } catch {
-      setItems(DEFAULT_JUNBAN_ITEMS.map(d => ({ ...d, achieved: null, reflection: "", improvement: "" })));
+      setDynItems([mkDynItem()]); setPersonal(mkPersonal());
     }
     setAiText(""); setGenError(null);
   }, [weekStart]);
 
-  const saveItems = React.useCallback((next) => {
-    storage.set(storageKey, JSON.stringify(next));
-    setItems(next);
+  const saveData = React.useCallback((d, p) => {
+    storage.set(storageKey, JSON.stringify({ v: 2, dynamic: d, personal: p }));
   }, [storageKey]);
 
-  const updateItem = (id, patch) => {
-    if (!items) return;
-    saveItems(items.map(it => it.id === id ? { ...it, ...patch } : it));
+  const updateDyn = (uid, patch) => {
+    if (!dynItems) return;
+    const next = dynItems.map(it => it.uid === uid ? { ...it, ...patch } : it);
+    setDynItems(next); saveData(next, personal);
+  };
+  const addDynItem = () => {
+    if (!dynItems || dynItems.length >= 5) return;
+    const next = [...dynItems, mkDynItem()];
+    setDynItems(next); saveData(next, personal);
+  };
+  const removeDynItem = (uid) => {
+    if (!dynItems || dynItems.length <= 1) return;
+    const next = dynItems.filter(it => it.uid !== uid);
+    setDynItems(next); saveData(next, personal);
+  };
+  const updatePersonal = (patch) => {
+    if (!personal) return;
+    const next = { ...personal, ...patch };
+    setPersonal(next); saveData(dynItems, next);
   };
 
   const handleCopy = () => {
@@ -1627,14 +1655,19 @@ function JunbanView() {
 
   const generateReport = async () => {
     if (!apiKey) { setShowApiKey(true); setApiKeyInput(""); return; }
-    if (!items) return;
+    if (!dynItems || !personal) return;
     const parts = [`週次報告 ${formatWeekRange(weekStart)}`];
-    items.forEach(it => {
+    dynItems.forEach(it => {
+      if (!it.label) return;
       const status = it.achieved === true ? "達成" : it.achieved === false ? "未達" : "未入力";
       parts.push(`▼ ${it.label}（${status}）`);
       if (it.reflection?.trim())  parts.push(`振り返り: ${it.reflection.trim()}`);
       if (it.improvement?.trim()) parts.push(`改善策・今後: ${it.improvement.trim()}`);
     });
+    const ps = personal.achieved === true ? "達成" : personal.achieved === false ? "未達" : "未入力";
+    parts.push(`▼ 個人目標（${ps}）`);
+    if (personal.reflection?.trim())  parts.push(`振り返り: ${personal.reflection.trim()}`);
+    if (personal.improvement?.trim()) parts.push(`改善策・今後: ${personal.improvement.trim()}`);
     if (parts.length < 2) return;
     setIsGenerating(true); setGenError(null);
     try {
@@ -1663,12 +1696,22 @@ function JunbanView() {
     }
   };
 
-  if (!items) return null;
+  if (!dynItems || !personal) return null;
 
   const isThisWeek = weekStart === weekStartStr(today);
   const SL = ({ label }) => (
     <div style={{ fontSize: 9, letterSpacing: 2, color: "#aaa", textTransform: "uppercase", marginBottom: 8 }}>{label}</div>
   );
+  const toggleBtn = (achieved, color, label, onToggle) => {
+    const isActive = achieved === (label === "達成" ? true : false);
+    return (
+      <button onClick={onToggle} style={{
+        flex: 1, padding: "8px 0", border: `1.5px solid ${isActive ? color : "#e0e0e0"}`,
+        borderRadius: 8, background: isActive ? color : "transparent",
+        color: isActive ? "#fff" : "#aaa", fontSize: 12, cursor: "pointer"
+      }}>{label}</button>
+    );
+  };
 
   return (
     <div style={{ background: "#fff", minHeight: "100vh", paddingBottom: 80 }}>
@@ -1689,34 +1732,61 @@ function JunbanView() {
         <div style={{ height: 1, background: "#f0f0ee" }} />
       </div>
 
-      {/* KPI 項目 */}
+      {/* KPI 動的項目 */}
       <div style={{ padding: "16px 16px 0" }}>
-        {items.map(item => (
-          <div key={item.id} style={{ marginBottom: 26 }}>
-            <SL label={item.label} />
-            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-              {[["true", "達成", "#27ae60"], ["false", "未達", "#e74c3c"]].map(([k, label, color]) => {
-                const isActive = k === "true" ? item.achieved === true : item.achieved === false;
-                return (
-                  <button key={k} onClick={() => {
-                    const next = k === "true" ? (item.achieved === true ? null : true) : (item.achieved === false ? null : false);
-                    updateItem(item.id, { achieved: next });
-                  }} style={{
-                    flex: 1, padding: "8px 0", border: `1.5px solid ${isActive ? color : "#e0e0e0"}`,
-                    borderRadius: 8, background: isActive ? color : "transparent",
-                    color: isActive ? "#fff" : "#aaa", fontSize: 12, cursor: "pointer"
-                  }}>{label}</button>
-                );
-              })}
+        {dynItems.map((item, idx) => (
+          <div key={item.uid} style={{ marginBottom: 26 }}>
+            {/* 項目ヘッダー: セレクト + 削除 */}
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+              <select value={item.label} onChange={e => updateDyn(item.uid, { label: e.target.value })}
+                style={{
+                  flex: 1, border: "1px solid #e0e0e0", borderRadius: 6, padding: "7px 10px",
+                  fontSize: 12, color: item.label ? "#111" : "#aaa", background: "#fff",
+                  outline: "none", fontFamily: "inherit", appearance: "none", WebkitAppearance: "none"
+                }}>
+                <option value="">項目を選択</option>
+                {JUNBAN_KPI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+              {dynItems.length > 1 && (
+                <button onClick={() => removeDynItem(item.uid)}
+                  style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#ccc", padding: "0 4px", lineHeight: 1 }}>×</button>
+              )}
             </div>
-            <textarea value={item.reflection} rows={3} onChange={e => updateItem(item.id, { reflection: e.target.value })}
-              placeholder={item.id === "personal" ? "目標への取り組み・成果など" : "今週の取り組み・状況・気づきなど"}
+            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+              {toggleBtn(item.achieved, "#27ae60", "達成", () => updateDyn(item.uid, { achieved: item.achieved === true ? null : true }))}
+              {toggleBtn(item.achieved, "#e74c3c", "未達", () => updateDyn(item.uid, { achieved: item.achieved === false ? null : false }))}
+            </div>
+            <textarea value={item.reflection} rows={3} onChange={e => updateDyn(item.uid, { reflection: e.target.value })}
+              placeholder="今週の取り組み・状況・気づきなど"
               style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6 }} />
-            <textarea value={item.improvement} rows={2} onChange={e => updateItem(item.id, { improvement: e.target.value })}
+            <textarea value={item.improvement} rows={2} onChange={e => updateDyn(item.uid, { improvement: e.target.value })}
               placeholder={item.achieved === true ? "今後の目標・課題" : "改善策・次週の取り組み"}
               style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6, marginTop: 6 }} />
           </div>
         ))}
+
+        {/* 追加ボタン */}
+        {dynItems.length < 5 && (
+          <button onClick={addDynItem}
+            style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 26, background: "none", border: "1px dashed #d0d0d0", borderRadius: 8, padding: "9px 16px", cursor: "pointer", color: "#aaa", fontSize: 12, width: "100%" }}>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> 項目を追加（{dynItems.length}/5）
+          </button>
+        )}
+
+        {/* 個人目標（固定） */}
+        <div style={{ marginBottom: 26 }}>
+          <SL label="個人目標" />
+          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            {toggleBtn(personal.achieved, "#27ae60", "達成", () => updatePersonal({ achieved: personal.achieved === true ? null : true }))}
+            {toggleBtn(personal.achieved, "#e74c3c", "未達", () => updatePersonal({ achieved: personal.achieved === false ? null : false }))}
+          </div>
+          <textarea value={personal.reflection} rows={3} onChange={e => updatePersonal({ reflection: e.target.value })}
+            placeholder="目標への取り組み・成果など"
+            style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6 }} />
+          <textarea value={personal.improvement} rows={2} onChange={e => updatePersonal({ improvement: e.target.value })}
+            placeholder={personal.achieved === true ? "今後の目標・課題" : "改善策・次週の取り組み"}
+            style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6, marginTop: 6 }} />
+        </div>
       </div>
 
       {/* AI 生成テキスト */}
@@ -1735,7 +1805,7 @@ function JunbanView() {
               }}>
               {isGenerating
                 ? <><span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />生成中…</>
-                : "AI順番"}
+                : "AI生成"}
             </button>
             <button onClick={handleCopy} disabled={!aiText}
               style={{
@@ -1754,7 +1824,7 @@ function JunbanView() {
           whiteSpace: "pre-wrap", minHeight: 120, letterSpacing: 0.3,
           border: aiText ? "1px solid #d0e4f7" : "none"
         }}>
-          {aiText || "KPI項目を入力後、AI順番ボタンで生成します"}
+          {aiText || "KPI項目を入力後、AI生成ボタンで週報を作成します"}
         </div>
         {aiText && (
           <button onClick={() => setAiText("")}
