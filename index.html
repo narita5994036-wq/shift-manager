@@ -1682,13 +1682,13 @@ function JunbanView() {
     const memo = currentText?.trim() ? `\n参考メモ: ${currentText.trim()}` : "";
     let prompt;
     if (field === "failReason") {
-      prompt = `あなたは小売店スタッフです。以下のKPI項目について「未達理由と反省点」を60〜100字で記述してください。スタッフ目線で具体的に。本文のみ出力。\n\nKPI: ${label}\n状況: 未達${memo}`;
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「未達理由と反省点」を60〜100字で記述してください。スタッフ目線で具体的に。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。本文のみ出力。\n\nKPI: ${label}\n状況: 未達${memo}`;
     } else if (field === "improvement") {
-      prompt = `あなたは小売店スタッフです。以下のKPI項目について「改善策と次週の取り組み」を60〜100字で記述してください。具体的な行動ベースで。本文のみ出力。\n\nKPI: ${label}\n状況: ${achievedLabel}${memo}`;
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「改善策と次週の取り組み」を60〜100字で記述してください。具体的な行動ベースで。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。本文のみ出力。\n\nKPI: ${label}\n状況: ${achievedLabel}${memo}`;
     } else if (field === "achieveReason") {
-      prompt = `あなたは小売店スタッフです。以下のKPI項目について「達成できた理由」を60〜100字で記述してください。取り組みや要因を具体的に。本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}`;
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「達成できた理由」を60〜100字で記述してください。取り組みや要因を具体的に。呼び込み・チラシ配布・SNS運用は行っていないため含めないこと。本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}`;
     } else if (field === "goodPractice") {
-      prompt = `あなたは小売店スタッフです。以下のKPI項目で「実施したグッドプラクティス」（次週以降に活かせる良い取り組み）を60〜100字で記述してください。本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}`;
+      prompt = `あなたは小売店スタッフです。以下のKPI項目で「実施したグッドプラクティス」（次週以降に活かせる良い取り組み）を60〜100字で記述してください。呼び込み・チラシ配布・SNS運用は行っていないため含めないこと。本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}`;
     }
     try {
       const text = await callClaude(prompt);
