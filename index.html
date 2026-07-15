@@ -1151,9 +1151,9 @@ function ShiftManager() {
 
           {/* Tabs */}
           <div style={{ display: "flex", borderTop: "1px solid #e0dedd", alignItems: "center" }}>
-            {["calendar", "list", "draft", "report"].map(v => {
+            {["calendar", "list", "draft", "report", "junban"].map(v => {
               const isActive = v === view || (v === "list" && selectMode);
-              const label = v === "calendar" ? "Cal" : v === "list" ? (selectMode ? "Select" : "List") : v === "draft" ? "Draft" : "日報";
+              const label = v === "calendar" ? "Cal" : v === "list" ? (selectMode ? "Select" : "List") : v === "draft" ? "Draft" : v === "report" ? "日報" : "順番";
               return (
                 <button key={v} onClick={() => {
                   if (v === "list" && selectMode) { setSelectMode(false); setSelected([]); setConfirmMultiDelete(false); return; }
@@ -1180,6 +1180,8 @@ function ShiftManager() {
       {/* ── Content ────────────────────────────────── */}
       {view === "counter"
         ? <CounterView member={member} year={year} month={month} shifts={shifts} saveShifts={saveShifts} />
+        : view === "junban"
+          ? <JunbanView />
         : view === "report"
           ? <DailyReportView year={year} month={month} daysInMonth={daysInMonth} />
           : <div
@@ -1528,6 +1530,256 @@ function ShiftManager() {
         </svg>
       </button>}
 
+    </div>
+  );
+}
+
+// ── Junban View ──────────────────────────────────────────────
+const DEFAULT_JUNBAN_ITEMS = [
+  { id: "visitors", label: "来店者数" },
+  { id: "tryon",    label: "試着数" },
+  { id: "personal", label: "個人目標" },
+];
+
+const DEFAULT_JUNBAN_PROMPT = `あなたは小売店舗スタッフの週次KPI報告（順番）作成を補助するアシスタントです。
+スタッフが入力したKPIの達成・未達状況と振り返りメモを、以下の構造でプロフェッショナルな日本語業務報告書に変換してください。
+
+出力フォーマット（未達項目がある場合）:
+未達項目と改善
+（項目名）
+　振り返りを2〜3文で。試みたこと、改善できた点、届かなかった点を明確に。
+改善策 具体的な行動方針を2〜3文で。
+（複数項目ある場合は繰り返す）
+
+個人目標の達成・未達
+　取り組みと成果・課題を2〜3文で。
+
+ルール：
+- です・ます調の丁寧な報告体
+- 提供されたメモを基に具体的かつ前向きに記述
+- 未達項目がない場合はその見出しは省略
+- 本文のみ出力（余分なマークダウン・記号は不要）`;
+
+function weekStartStr(date) {
+  const d = new Date(date);
+  const dow = d.getDay();
+  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+  return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
+}
+
+function addWeeks(str, n) {
+  const d = new Date(str + "T00:00:00");
+  d.setDate(d.getDate() + n * 7);
+  return weekStartStr(d);
+}
+
+function formatWeekRange(startStr) {
+  const WD = ["日","月","火","水","木","金","土"];
+  const s = new Date(startStr + "T00:00:00");
+  const e = new Date(startStr + "T00:00:00");
+  e.setDate(e.getDate() + 6);
+  const sm = s.getMonth()+1, sd = s.getDate();
+  const em = e.getMonth()+1, ed = e.getDate();
+  const range = sm === em
+    ? `${sm}月${sd}日（${WD[s.getDay()]}）〜${ed}日（${WD[e.getDay()]}）`
+    : `${sm}月${sd}日（${WD[s.getDay()]}）〜${em}月${ed}日（${WD[e.getDay()]}）`;
+  return `${s.getFullYear()}年${range}`;
+}
+
+function JunbanView() {
+  const today = new Date();
+  const [weekStart, setWeekStart] = React.useState(() => weekStartStr(today));
+  const [items, setItems]         = React.useState(null);
+  const [aiText, setAiText]       = React.useState("");
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [genError, setGenError]   = React.useState(null);
+  const [copied, setCopied]       = React.useState(false);
+  const [apiKey, setApiKey]       = React.useState(() => localStorage.getItem("anthropic_api_key") || "");
+  const [showApiKey, setShowApiKey] = React.useState(false);
+  const [apiKeyInput, setApiKeyInput] = React.useState("");
+
+  const storageKey = `junban:${weekStart}`;
+
+  React.useEffect(() => {
+    try {
+      const saved = storage.get(storageKey);
+      setItems(saved ? JSON.parse(saved) : DEFAULT_JUNBAN_ITEMS.map(d => ({ ...d, achieved: null, reflection: "", improvement: "" })));
+    } catch {
+      setItems(DEFAULT_JUNBAN_ITEMS.map(d => ({ ...d, achieved: null, reflection: "", improvement: "" })));
+    }
+    setAiText(""); setGenError(null);
+  }, [weekStart]);
+
+  const saveItems = React.useCallback((next) => {
+    storage.set(storageKey, JSON.stringify(next));
+    setItems(next);
+  }, [storageKey]);
+
+  const updateItem = (id, patch) => {
+    if (!items) return;
+    saveItems(items.map(it => it.id === id ? { ...it, ...patch } : it));
+  };
+
+  const handleCopy = () => {
+    if (!aiText) return;
+    navigator.clipboard?.writeText(aiText).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); });
+  };
+
+  const generateReport = async () => {
+    if (!apiKey) { setShowApiKey(true); setApiKeyInput(""); return; }
+    if (!items) return;
+    const parts = [`週次報告 ${formatWeekRange(weekStart)}`];
+    items.forEach(it => {
+      const status = it.achieved === true ? "達成" : it.achieved === false ? "未達" : "未入力";
+      parts.push(`▼ ${it.label}（${status}）`);
+      if (it.reflection?.trim())  parts.push(`振り返り: ${it.reflection.trim()}`);
+      if (it.improvement?.trim()) parts.push(`改善策・今後: ${it.improvement.trim()}`);
+    });
+    if (parts.length < 2) return;
+    setIsGenerating(true); setGenError(null);
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true"
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5",
+          max_tokens: 1500,
+          system: DEFAULT_JUNBAN_PROMPT,
+          messages: [{ role: "user", content: parts.join("\n") }]
+        })
+      });
+      if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error?.message || `APIエラー ${res.status}`); }
+      const data = await res.json();
+      setAiText(data.content?.[0]?.text || "");
+    } catch (e) {
+      setGenError(e.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  if (!items) return null;
+
+  const isThisWeek = weekStart === weekStartStr(today);
+  const SL = ({ label }) => (
+    <div style={{ fontSize: 9, letterSpacing: 2, color: "#aaa", textTransform: "uppercase", marginBottom: 8 }}>{label}</div>
+  );
+
+  return (
+    <div style={{ background: "#fff", minHeight: "100vh", paddingBottom: 80 }}>
+
+      {/* 週セレクター */}
+      <div style={{ padding: "16px 16px 0" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <button onClick={() => setWeekStart(w => addWeeks(w, -1))}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#bbb", padding: "0 8px", lineHeight: 1 }}>‹</button>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 9, letterSpacing: 3, color: "#ccc", textTransform: "uppercase", marginBottom: 3 }}>WEEKLY REPORT</div>
+            <div style={{ fontSize: 13, fontWeight: 300, color: "#111" }}>{formatWeekRange(weekStart)}</div>
+            {isThisWeek && <div style={{ fontSize: 8, color: "#4c7ab5", marginTop: 3, letterSpacing: 1 }}>今週</div>}
+          </div>
+          <button onClick={() => setWeekStart(w => addWeeks(w, 1))}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 22, color: "#bbb", padding: "0 8px", lineHeight: 1 }}>›</button>
+        </div>
+        <div style={{ height: 1, background: "#f0f0ee" }} />
+      </div>
+
+      {/* KPI 項目 */}
+      <div style={{ padding: "16px 16px 0" }}>
+        {items.map(item => (
+          <div key={item.id} style={{ marginBottom: 26 }}>
+            <SL label={item.label} />
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+              {[["true", "達成", "#27ae60"], ["false", "未達", "#e74c3c"]].map(([k, label, color]) => {
+                const isActive = k === "true" ? item.achieved === true : item.achieved === false;
+                return (
+                  <button key={k} onClick={() => {
+                    const next = k === "true" ? (item.achieved === true ? null : true) : (item.achieved === false ? null : false);
+                    updateItem(item.id, { achieved: next });
+                  }} style={{
+                    flex: 1, padding: "8px 0", border: `1.5px solid ${isActive ? color : "#e0e0e0"}`,
+                    borderRadius: 8, background: isActive ? color : "transparent",
+                    color: isActive ? "#fff" : "#aaa", fontSize: 12, cursor: "pointer"
+                  }}>{label}</button>
+                );
+              })}
+            </div>
+            <textarea value={item.reflection} rows={3} onChange={e => updateItem(item.id, { reflection: e.target.value })}
+              placeholder={item.id === "personal" ? "目標への取り組み・成果など" : "今週の取り組み・状況・気づきなど"}
+              style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6 }} />
+            <textarea value={item.improvement} rows={2} onChange={e => updateItem(item.id, { improvement: e.target.value })}
+              placeholder={item.achieved === true ? "今後の目標・課題" : "改善策・次週の取り組み"}
+              style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6, marginTop: 6 }} />
+          </div>
+        ))}
+      </div>
+
+      {/* AI 生成テキスト */}
+      <div style={{ padding: "0 16px 32px" }}>
+        <div style={{ height: 1, background: "#f0f0ee", marginBottom: 16 }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <SL label="生成テキスト" />
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={generateReport} disabled={isGenerating}
+              style={{
+                padding: "5px 14px", border: "none", borderRadius: 6,
+                cursor: isGenerating ? "default" : "pointer",
+                background: isGenerating ? "#ccc" : "#4c7ab5",
+                color: "#fff", fontSize: 10, letterSpacing: 0.5,
+                display: "flex", alignItems: "center", gap: 5
+              }}>
+              {isGenerating
+                ? <><span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />生成中…</>
+                : "AI順番"}
+            </button>
+            <button onClick={handleCopy} disabled={!aiText}
+              style={{
+                padding: "5px 14px", border: "none", borderRadius: 6, cursor: aiText ? "pointer" : "default",
+                background: copied ? "#27ae60" : aiText ? "#111" : "#e0e0e0",
+                color: "#fff", fontSize: 10, letterSpacing: 1, transition: "background 0.2s"
+              }}>{copied ? "コピー済" : "コピー"}</button>
+          </div>
+        </div>
+        {genError && (
+          <div style={{ marginBottom: 8, padding: "8px 12px", background: "#fff5f5", border: "1px solid #fcc", borderRadius: 6, fontSize: 11, color: "#c0392b" }}>{genError}</div>
+        )}
+        <div style={{
+          background: aiText ? "#f0f6ff" : "#f8f8f8", borderRadius: 8, padding: "12px 14px",
+          fontSize: 13, lineHeight: 1.8, color: aiText ? "#111" : "#bbb",
+          whiteSpace: "pre-wrap", minHeight: 120, letterSpacing: 0.3,
+          border: aiText ? "1px solid #d0e4f7" : "none"
+        }}>
+          {aiText || "KPI項目を入力後、AI順番ボタンで生成します"}
+        </div>
+        {aiText && (
+          <button onClick={() => setAiText("")}
+            style={{ marginTop: 6, background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#bbb", letterSpacing: 0.5 }}>クリア</button>
+        )}
+        {/* API Key */}
+        <div style={{ marginTop: 16 }}>
+          <button onClick={() => { setShowApiKey(v => !v); setApiKeyInput(apiKey); }}
+            style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#ccc", letterSpacing: 0.5 }}>
+            {showApiKey ? "▲ APIキー設定を閉じる" : `▼ APIキー設定${apiKey ? "（設定済）" : "（未設定）"}`}
+          </button>
+          {showApiKey && (
+            <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="password" value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)}
+                placeholder="sk-ant-..." autoComplete="off"
+                style={{ flex: 1, border: "1px solid #e0e0e0", borderRadius: 6, padding: "6px 10px", fontSize: 12, outline: "none", fontFamily: "monospace" }} />
+              <button onClick={() => {
+                localStorage.setItem("anthropic_api_key", apiKeyInput);
+                setApiKey(apiKeyInput);
+                setShowApiKey(false);
+              }} style={{ background: "#111", color: "#fff", border: "none", borderRadius: 6, padding: "6px 12px", fontSize: 11, cursor: "pointer" }}>保存</button>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
