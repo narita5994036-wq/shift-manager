@@ -1599,6 +1599,7 @@ function JunbanView() {
   const [aiText, setAiText]       = React.useState("");
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [genError, setGenError]   = React.useState(null);
+  const [fieldGen, setFieldGen]   = React.useState({}); // { "uid-reflection": true, ... }
   const [copied, setCopied]       = React.useState(false);
   const [apiKey, setApiKey]       = React.useState(() => localStorage.getItem("anthropic_api_key") || "");
   const [showApiKey, setShowApiKey] = React.useState(false);
@@ -1623,7 +1624,7 @@ function JunbanView() {
     } catch {
       setDynItems([mkDynItem()]); setPersonal(mkPersonal());
     }
-    setAiText(""); setGenError(null);
+    setAiText(""); setGenError(null); setFieldGen({});
   }, [weekStart]);
 
   const saveData = React.useCallback((d, p) => {
@@ -1651,6 +1652,47 @@ function JunbanView() {
     setPersonal(next); saveData(dynItems, next);
   };
 
+  const callClaude = async (prompt) => {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true"
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5",
+        max_tokens: 400,
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+    if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.error?.message || `APIエラー ${res.status}`); }
+    const data = await res.json();
+    return (data.content?.[0]?.text || "").trim();
+  };
+
+  const generateField = async (genKey, label, achieved, currentText, field, onDone) => {
+    if (!apiKey) { setShowApiKey(true); setApiKeyInput(""); return; }
+    setFieldGen(s => ({ ...s, [genKey]: true }));
+    const achievedLabel = achieved === true ? "達成" : achieved === false ? "未達" : "未判定";
+    const memo = currentText?.trim() ? `\n参考メモ: ${currentText.trim()}` : "";
+    let prompt;
+    if (field === "reflection") {
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「未達理由と反省点」を60〜100字程度で記述してください。スタッフ目線で具体的に。本文のみ出力。\n\nKPI: ${label}\n状況: ${achievedLabel}${memo}`;
+    } else {
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「改善策と次週の取り組み」を60〜100字程度で記述してください。具体的な行動ベースで。本文のみ出力。\n\nKPI: ${label}\n状況: ${achievedLabel}${memo}`;
+    }
+    try {
+      const text = await callClaude(prompt);
+      if (text) onDone(text);
+    } catch (e) {
+      // silently fail on field-level generation
+    } finally {
+      setFieldGen(s => ({ ...s, [genKey]: false }));
+    }
+  };
+
   const handleCopy = () => {
     if (!aiText) return;
     navigator.clipboard?.writeText(aiText).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1800); });
@@ -1664,13 +1706,13 @@ function JunbanView() {
       if (!it.label) return;
       const status = it.achieved === true ? "達成" : it.achieved === false ? "未達" : "未入力";
       parts.push(`▼ ${it.label}（${status}）`);
-      if (it.reflection?.trim())  parts.push(`振り返り: ${it.reflection.trim()}`);
-      if (it.improvement?.trim()) parts.push(`改善策・今後: ${it.improvement.trim()}`);
+      if (it.reflection?.trim())  parts.push(`未達理由と反省点: ${it.reflection.trim()}`);
+      if (it.improvement?.trim()) parts.push(`改善策と次週の取り組み: ${it.improvement.trim()}`);
     });
     const ps = personal.achieved === true ? "達成" : personal.achieved === false ? "未達" : "未入力";
     parts.push(`▼ 個人目標（${ps}）`);
-    if (personal.reflection?.trim())  parts.push(`振り返り: ${personal.reflection.trim()}`);
-    if (personal.improvement?.trim()) parts.push(`改善策・今後: ${personal.improvement.trim()}`);
+    if (personal.reflection?.trim())  parts.push(`未達理由と反省点: ${personal.reflection.trim()}`);
+    if (personal.improvement?.trim()) parts.push(`改善策と次週の取り組み: ${personal.improvement.trim()}`);
     if (parts.length < 2) return;
     setIsGenerating(true); setGenError(null);
     try {
@@ -1715,6 +1757,25 @@ function JunbanView() {
       }}>{label}</button>
     );
   };
+  const Spinner = () => (
+    <span style={{ display: "inline-block", width: 8, height: 8, border: "1.5px solid rgba(76,122,181,0.3)", borderTopColor: "#4c7ab5", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
+  );
+  const FieldRow = ({ label, genKey, value, onChange, rows, placeholder, onGenerate }) => {
+    const busy = fieldGen[genKey];
+    return (
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <span style={{ fontSize: 10, color: "#bbb", letterSpacing: 0.3 }}>{label}</span>
+          <button onClick={onGenerate} disabled={busy}
+            style={{ background: "none", border: "1px solid #d0daea", borderRadius: 4, padding: "2px 8px", fontSize: 9, color: busy ? "#ccc" : "#4c7ab5", cursor: busy ? "default" : "pointer", display: "flex", alignItems: "center", gap: 3, lineHeight: 1.6 }}>
+            {busy ? <Spinner /> : "✦"} AI
+          </button>
+        </div>
+        <textarea value={value} rows={rows} onChange={onChange} placeholder={placeholder}
+          style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6 }} />
+      </div>
+    );
+  };
 
   return (
     <div style={{ background: "#fff", minHeight: "100vh", paddingBottom: 80 }}>
@@ -1737,16 +1798,11 @@ function JunbanView() {
 
       {/* KPI 動的項目 */}
       <div style={{ padding: "16px 16px 0" }}>
-        {dynItems.map((item, idx) => (
-          <div key={item.uid} style={{ marginBottom: 26 }}>
-            {/* 項目ヘッダー: セレクト + 削除 */}
+        {dynItems.map((item) => (
+          <div key={item.uid} style={{ marginBottom: 28 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
               <select value={item.label} onChange={e => updateDyn(item.uid, { label: e.target.value })}
-                style={{
-                  flex: 1, border: "1px solid #e0e0e0", borderRadius: 6, padding: "7px 10px",
-                  fontSize: 12, color: item.label ? "#111" : "#aaa", background: "#fff",
-                  outline: "none", fontFamily: "inherit", appearance: "none", WebkitAppearance: "none"
-                }}>
+                style={{ flex: 1, border: "1px solid #e0e0e0", borderRadius: 6, padding: "7px 10px", fontSize: 12, color: item.label ? "#111" : "#aaa", background: "#fff", outline: "none", fontFamily: "inherit", appearance: "none", WebkitAppearance: "none" }}>
                 <option value="">項目を選択</option>
                 {JUNBAN_KPI_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
               </select>
@@ -1755,85 +1811,90 @@ function JunbanView() {
                   style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#ccc", padding: "0 4px", lineHeight: 1 }}>×</button>
               )}
             </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+            <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
               {toggleBtn(item.achieved, "#27ae60", "達成", () => updateDyn(item.uid, { achieved: item.achieved === true ? null : true }))}
               {toggleBtn(item.achieved, "#e74c3c", "未達", () => updateDyn(item.uid, { achieved: item.achieved === false ? null : false }))}
             </div>
-            <textarea value={item.reflection} rows={3} onChange={e => updateDyn(item.uid, { reflection: e.target.value })}
-              placeholder="今週の取り組み・状況・気づきなど"
-              style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6 }} />
-            <textarea value={item.improvement} rows={2} onChange={e => updateDyn(item.uid, { improvement: e.target.value })}
-              placeholder={item.achieved === true ? "今後の目標・課題" : "改善策・次週の取り組み"}
-              style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6, marginTop: 6 }} />
+            <FieldRow
+              label="未達理由と反省点"
+              genKey={`${item.uid}-reflection`}
+              value={item.reflection} rows={3}
+              placeholder="今週の取り組み・未達の要因など"
+              onChange={e => updateDyn(item.uid, { reflection: e.target.value })}
+              onGenerate={() => generateField(`${item.uid}-reflection`, item.label || "KPI項目", item.achieved, item.reflection, "reflection", txt => updateDyn(item.uid, { reflection: txt }))}
+            />
+            <FieldRow
+              label="改善策と次週の取り組み"
+              genKey={`${item.uid}-improvement`}
+              value={item.improvement} rows={3}
+              placeholder="具体的な行動・次週に向けての取り組みなど"
+              onChange={e => updateDyn(item.uid, { improvement: e.target.value })}
+              onGenerate={() => generateField(`${item.uid}-improvement`, item.label || "KPI項目", item.achieved, item.improvement, "improvement", txt => updateDyn(item.uid, { improvement: txt }))}
+            />
           </div>
         ))}
 
-        {/* 追加ボタン */}
         {dynItems.length < 5 && (
           <button onClick={addDynItem}
-            style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 26, background: "none", border: "1px dashed #d0d0d0", borderRadius: 8, padding: "9px 16px", cursor: "pointer", color: "#aaa", fontSize: 12, width: "100%" }}>
+            style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 28, background: "none", border: "1px dashed #d0d0d0", borderRadius: 8, padding: "9px 16px", cursor: "pointer", color: "#aaa", fontSize: 12, width: "100%" }}>
             <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> 項目を追加（{dynItems.length}/5）
           </button>
         )}
 
         {/* 個人目標（固定） */}
-        <div style={{ marginBottom: 26 }}>
+        <div style={{ marginBottom: 28 }}>
           <SL label="個人目標" />
-          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
             {toggleBtn(personal.achieved, "#27ae60", "達成", () => updatePersonal({ achieved: personal.achieved === true ? null : true }))}
             {toggleBtn(personal.achieved, "#e74c3c", "未達", () => updatePersonal({ achieved: personal.achieved === false ? null : false }))}
           </div>
-          <textarea value={personal.reflection} rows={3} onChange={e => updatePersonal({ reflection: e.target.value })}
-            placeholder="目標への取り組み・成果など"
-            style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6 }} />
-          <textarea value={personal.improvement} rows={2} onChange={e => updatePersonal({ improvement: e.target.value })}
-            placeholder={personal.achieved === true ? "今後の目標・課題" : "改善策・次週の取り組み"}
-            style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6, marginTop: 6 }} />
+          <FieldRow
+            label="未達理由と反省点"
+            genKey="personal-reflection"
+            value={personal.reflection} rows={3}
+            placeholder="目標への取り組み・達成できなかった要因など"
+            onChange={e => updatePersonal({ reflection: e.target.value })}
+            onGenerate={() => generateField("personal-reflection", "個人目標", personal.achieved, personal.reflection, "reflection", txt => updatePersonal({ reflection: txt }))}
+          />
+          <FieldRow
+            label="改善策と次週の取り組み"
+            genKey="personal-improvement"
+            value={personal.improvement} rows={3}
+            placeholder="次週に向けての具体的な取り組みなど"
+            onChange={e => updatePersonal({ improvement: e.target.value })}
+            onGenerate={() => generateField("personal-improvement", "個人目標", personal.achieved, personal.improvement, "improvement", txt => updatePersonal({ improvement: txt }))}
+          />
         </div>
       </div>
 
-      {/* AI 生成テキスト */}
+      {/* AI 週報生成 */}
       <div style={{ padding: "0 16px 32px" }}>
         <div style={{ height: 1, background: "#f0f0ee", marginBottom: 16 }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
           <SL label="生成テキスト" />
           <div style={{ display: "flex", gap: 6 }}>
             <button onClick={generateReport} disabled={isGenerating}
-              style={{
-                padding: "5px 14px", border: "none", borderRadius: 6,
-                cursor: isGenerating ? "default" : "pointer",
-                background: isGenerating ? "#ccc" : "#4c7ab5",
-                color: "#fff", fontSize: 10, letterSpacing: 0.5,
-                display: "flex", alignItems: "center", gap: 5
-              }}>
+              style={{ padding: "5px 14px", border: "none", borderRadius: 6, cursor: isGenerating ? "default" : "pointer", background: isGenerating ? "#ccc" : "#4c7ab5", color: "#fff", fontSize: 10, letterSpacing: 0.5, display: "flex", alignItems: "center", gap: 5 }}>
               {isGenerating
                 ? <><span style={{ display: "inline-block", width: 10, height: 10, border: "2px solid rgba(255,255,255,0.4)", borderTopColor: "#fff", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />生成中…</>
-                : "AI生成"}
+                : "AI週報生成"}
             </button>
             <button onClick={handleCopy} disabled={!aiText}
-              style={{
-                padding: "5px 14px", border: "none", borderRadius: 6, cursor: aiText ? "pointer" : "default",
-                background: copied ? "#27ae60" : aiText ? "#111" : "#e0e0e0",
-                color: "#fff", fontSize: 10, letterSpacing: 1, transition: "background 0.2s"
-              }}>{copied ? "コピー済" : "コピー"}</button>
+              style={{ padding: "5px 14px", border: "none", borderRadius: 6, cursor: aiText ? "pointer" : "default", background: copied ? "#27ae60" : aiText ? "#111" : "#e0e0e0", color: "#fff", fontSize: 10, letterSpacing: 1, transition: "background 0.2s" }}>
+              {copied ? "コピー済" : "コピー"}
+            </button>
           </div>
         </div>
         {genError && (
           <div style={{ marginBottom: 8, padding: "8px 12px", background: "#fff5f5", border: "1px solid #fcc", borderRadius: 6, fontSize: 11, color: "#c0392b" }}>{genError}</div>
         )}
-        <div style={{
-          background: aiText ? "#f0f6ff" : "#f8f8f8", borderRadius: 8, padding: "12px 14px",
-          fontSize: 13, lineHeight: 1.8, color: aiText ? "#111" : "#bbb",
-          whiteSpace: "pre-wrap", minHeight: 120, letterSpacing: 0.3,
-          border: aiText ? "1px solid #d0e4f7" : "none"
-        }}>
-          {aiText || "KPI項目を入力後、AI生成ボタンで週報を作成します"}
+        <div style={{ background: aiText ? "#f0f6ff" : "#f8f8f8", borderRadius: 8, padding: "12px 14px", fontSize: 13, lineHeight: 1.8, color: aiText ? "#111" : "#bbb", whiteSpace: "pre-wrap", minHeight: 120, letterSpacing: 0.3, border: aiText ? "1px solid #d0e4f7" : "none" }}>
+          {aiText || "各項目を入力後、AI週報生成で全体の週報テキストを作成します"}
         </div>
         {aiText && (
           <button onClick={() => setAiText("")}
             style={{ marginTop: 6, background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#bbb", letterSpacing: 0.5 }}>クリア</button>
         )}
-        {/* API Key */}
         <div style={{ marginTop: 16 }}>
           <button onClick={() => { setShowApiKey(v => !v); setApiKeyInput(apiKey); }}
             style={{ background: "none", border: "none", cursor: "pointer", fontSize: 10, color: "#ccc", letterSpacing: 0.5 }}>
