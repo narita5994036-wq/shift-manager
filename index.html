@@ -1675,7 +1675,7 @@ function JunbanView() {
     return (data.content?.[0]?.text || "").trim();
   };
 
-  const generateField = async (genKey, label, achieved, currentText, field, onDone) => {
+  const generateField = async (genKey, label, achieved, currentText, field, onDone, failReasonText) => {
     if (!apiKey) { setShowApiKey(true); setApiKeyInput(""); return; }
     setFieldGen(s => ({ ...s, [genKey]: true }));
     const achievedLabel = achieved === true ? "達成" : achieved === false ? "未達" : "未判定";
@@ -1684,7 +1684,8 @@ function JunbanView() {
     if (field === "failReason") {
       prompt = `あなたは小売店スタッフです。以下のKPI項目について「未達理由と反省点」を60〜100字で記述してください。スタッフ目線で具体的に。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。本文のみ出力。\n\nKPI: ${label}\n状況: 未達${memo}`;
     } else if (field === "improvement") {
-      prompt = `あなたは小売店スタッフです。以下のKPI項目について「改善策と次週の取り組み」を60〜100字で記述してください。具体的な行動ベースで。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。本文のみ出力。\n\nKPI: ${label}\n状況: ${achievedLabel}${memo}`;
+      const failRef = failReasonText?.trim() ? `\n未達理由と反省点: ${failReasonText.trim()}` : "";
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「改善策と次週の取り組み」を60〜100字で記述してください。未達理由と反省点の内容を踏まえた具体的な行動ベースで記述すること。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。本文のみ出力。\n\nKPI: ${label}\n状況: ${achievedLabel}${failRef}${memo}`;
     } else if (field === "achieveReason") {
       prompt = `あなたは小売店スタッフです。以下のKPI項目について「達成できた理由」を60〜100字で記述してください。取り組みや要因を具体的に。呼び込み・チラシ配布・SNS運用は行っていないため含めないこと。本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}`;
     } else if (field === "goodPractice") {
@@ -1845,7 +1846,7 @@ function JunbanView() {
                 <FieldRow label="改善策と次週の取り組み" genKey={`${item.uid}-improvement`}
                   value={item.improvement} rows={3} placeholder="具体的な行動・次週に向けての取り組みなど"
                   onChange={e => updateDyn(item.uid, { improvement: e.target.value })}
-                  onGenerate={() => generateField(`${item.uid}-improvement`, item.label || "KPI項目", item.achieved, item.improvement, "improvement", txt => updateDyn(item.uid, { improvement: txt }))} />
+                  onGenerate={() => generateField(`${item.uid}-improvement`, item.label || "KPI項目", item.achieved, item.improvement, "improvement", txt => updateDyn(item.uid, { improvement: txt }), item.failReason)} />
               </React.Fragment>
             )}
             {item.achieved === true && (
@@ -1925,7 +1926,7 @@ function JunbanView() {
                   <FieldRow label="改善策と次週の取り組み" genKey="personal-improvement"
                     value={personal.improvement} rows={3} placeholder="次週に向けての具体的な取り組みなど"
                     onChange={e => updatePersonal({ improvement: e.target.value })}
-                    onGenerate={() => generateField("personal-improvement", pLabel, pAchieved, personal.improvement, "improvement", txt => updatePersonal({ improvement: txt }))} />
+                    onGenerate={() => generateField("personal-improvement", pLabel, pAchieved, personal.improvement, "improvement", txt => updatePersonal({ improvement: txt }), personal.failReason)} />
                 </React.Fragment>
               )}
               {pAchieved === true && (
