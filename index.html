@@ -3,7 +3,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Shift" />
@@ -1594,6 +1594,26 @@ function formatPeriodRange(startStr) {
   return `${year}年${month}月 第${pn}週（${sd}日〜${ed}日）`;
 }
 
+function JunbanSpinner() {
+  return <span style={{ display: "inline-block", width: 8, height: 8, border: "1.5px solid rgba(76,122,181,0.3)", borderTopColor: "#4c7ab5", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />;
+}
+
+function JunbanFieldRow({ label, busy, value, onChange, rows, placeholder, onGenerate }) {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+        <span style={{ fontSize: 10, color: "#bbb", letterSpacing: 0.3 }}>{label}</span>
+        <button onClick={onGenerate} disabled={busy}
+          style={{ background: "none", border: "1px solid #d0daea", borderRadius: 4, padding: "2px 8px", fontSize: 9, color: busy ? "#ccc" : "#4c7ab5", cursor: busy ? "default" : "pointer", display: "flex", alignItems: "center", gap: 3, lineHeight: 1.6 }}>
+          {busy ? <JunbanSpinner /> : "✦"} AI
+        </button>
+      </div>
+      <textarea value={value} rows={rows} onChange={onChange} placeholder={placeholder}
+        style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 16, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6 }} />
+    </div>
+  );
+}
+
 function JunbanView() {
   const today = new Date();
   const [weekStart, setWeekStart] = React.useState(() => periodStartStr(today));
@@ -1779,25 +1799,6 @@ function JunbanView() {
       }}>{label}</button>
     );
   };
-  const Spinner = () => (
-    <span style={{ display: "inline-block", width: 8, height: 8, border: "1.5px solid rgba(76,122,181,0.3)", borderTopColor: "#4c7ab5", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />
-  );
-  const FieldRow = ({ label, genKey, value, onChange, rows, placeholder, onGenerate }) => {
-    const busy = fieldGen[genKey];
-    return (
-      <div style={{ marginBottom: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-          <span style={{ fontSize: 10, color: "#bbb", letterSpacing: 0.3 }}>{label}</span>
-          <button onClick={onGenerate} disabled={busy}
-            style={{ background: "none", border: "1px solid #d0daea", borderRadius: 4, padding: "2px 8px", fontSize: 9, color: busy ? "#ccc" : "#4c7ab5", cursor: busy ? "default" : "pointer", display: "flex", alignItems: "center", gap: 3, lineHeight: 1.6 }}>
-            {busy ? <Spinner /> : "✦"} AI
-          </button>
-        </div>
-        <textarea value={value} rows={rows} onChange={onChange} placeholder={placeholder}
-          style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 12, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6 }} />
-      </div>
-    );
-  };
 
   return (
     <div style={{ background: "#fff", minHeight: "100vh", paddingBottom: 80 }}>
@@ -1839,11 +1840,11 @@ function JunbanView() {
             </div>
             {item.achieved === false && (
               <React.Fragment>
-                <FieldRow label="未達理由と反省点" genKey={`${item.uid}-failReason`}
+                <JunbanFieldRow label="未達理由と反省点" busy={fieldGen[`${item.uid}-failReason`]}
                   value={item.failReason} rows={3} placeholder="未達の要因・反省点など"
                   onChange={e => updateDyn(item.uid, { failReason: e.target.value })}
                   onGenerate={() => generateField(`${item.uid}-failReason`, item.label || "KPI項目", item.achieved, item.failReason, "failReason", txt => updateDyn(item.uid, { failReason: txt }))} />
-                <FieldRow label="改善策と次週の取り組み" genKey={`${item.uid}-improvement`}
+                <JunbanFieldRow label="改善策と次週の取り組み" busy={fieldGen[`${item.uid}-improvement`]}
                   value={item.improvement} rows={3} placeholder="具体的な行動・次週に向けての取り組みなど"
                   onChange={e => updateDyn(item.uid, { improvement: e.target.value })}
                   onGenerate={() => generateField(`${item.uid}-improvement`, item.label || "KPI項目", item.achieved, item.improvement, "improvement", txt => updateDyn(item.uid, { improvement: txt }), item.failReason)} />
@@ -1851,11 +1852,11 @@ function JunbanView() {
             )}
             {item.achieved === true && (
               <React.Fragment>
-                <FieldRow label="達成理由" genKey={`${item.uid}-achieveReason`}
+                <JunbanFieldRow label="達成理由" busy={fieldGen[`${item.uid}-achieveReason`]}
                   value={item.achieveReason} rows={3} placeholder="達成できた取り組み・要因など"
                   onChange={e => updateDyn(item.uid, { achieveReason: e.target.value })}
                   onGenerate={() => generateField(`${item.uid}-achieveReason`, item.label || "KPI項目", item.achieved, item.achieveReason, "achieveReason", txt => updateDyn(item.uid, { achieveReason: txt }))} />
-                <FieldRow label="実施したグッドプラクティス" genKey={`${item.uid}-goodPractice`}
+                <JunbanFieldRow label="実施したグッドプラクティス" busy={fieldGen[`${item.uid}-goodPractice`]}
                   value={item.goodPractice} rows={3} placeholder="次週以降に活かせる良い取り組みなど"
                   onChange={e => updateDyn(item.uid, { goodPractice: e.target.value })}
                   onGenerate={() => generateField(`${item.uid}-goodPractice`, item.label || "KPI項目", item.achieved, item.goodPractice, "goodPractice", txt => updateDyn(item.uid, { goodPractice: txt }))} />
@@ -1919,11 +1920,11 @@ function JunbanView() {
 
               {pAchieved === false && (
                 <React.Fragment>
-                  <FieldRow label="未達理由と反省点" genKey="personal-failReason"
+                  <JunbanFieldRow label="未達理由と反省点" busy={fieldGen["personal-failReason"]}
                     value={personal.failReason} rows={3} placeholder="目標への取り組み・達成できなかった要因など"
                     onChange={e => updatePersonal({ failReason: e.target.value })}
                     onGenerate={() => generateField("personal-failReason", pLabel, pAchieved, personal.failReason, "failReason", txt => updatePersonal({ failReason: txt }))} />
-                  <FieldRow label="改善策と次週の取り組み" genKey="personal-improvement"
+                  <JunbanFieldRow label="改善策と次週の取り組み" busy={fieldGen["personal-improvement"]}
                     value={personal.improvement} rows={3} placeholder="次週に向けての具体的な取り組みなど"
                     onChange={e => updatePersonal({ improvement: e.target.value })}
                     onGenerate={() => generateField("personal-improvement", pLabel, pAchieved, personal.improvement, "improvement", txt => updatePersonal({ improvement: txt }), personal.failReason)} />
@@ -1931,11 +1932,11 @@ function JunbanView() {
               )}
               {pAchieved === true && (
                 <React.Fragment>
-                  <FieldRow label="達成理由" genKey="personal-achieveReason"
+                  <JunbanFieldRow label="達成理由" busy={fieldGen["personal-achieveReason"]}
                     value={personal.achieveReason} rows={3} placeholder="達成できた取り組み・要因など"
                     onChange={e => updatePersonal({ achieveReason: e.target.value })}
                     onGenerate={() => generateField("personal-achieveReason", pLabel, pAchieved, personal.achieveReason, "achieveReason", txt => updatePersonal({ achieveReason: txt }))} />
-                  <FieldRow label="実施したグッドプラクティス" genKey="personal-goodPractice"
+                  <JunbanFieldRow label="実施したグッドプラクティス" busy={fieldGen["personal-goodPractice"]}
                     value={personal.goodPractice} rows={3} placeholder="次週以降に活かせる良い取り組みなど"
                     onChange={e => updatePersonal({ goodPractice: e.target.value })}
                     onGenerate={() => generateField("personal-goodPractice", pLabel, pAchieved, personal.goodPractice, "goodPractice", txt => updatePersonal({ goodPractice: txt }))} />
