@@ -1151,9 +1151,9 @@ function ShiftManager() {
 
           {/* Tabs */}
           <div style={{ display: "flex", borderTop: "1px solid #e0dedd", alignItems: "center" }}>
-            {["calendar", "list", "draft", "report", "junban"].map(v => {
+            {["calendar", "list", "report", "junban", "memo"].map(v => {
               const isActive = v === view || (v === "list" && selectMode);
-              const label = v === "calendar" ? "Cal" : v === "list" ? (selectMode ? "Select" : "List") : v === "draft" ? "Draft" : v === "report" ? "日報" : "週報";
+              const label = v === "calendar" ? "Cal" : v === "list" ? (selectMode ? "Select" : "List") : v === "report" ? "日報" : v === "junban" ? "週報" : "メモ";
               return (
                 <button key={v} onClick={() => {
                   if (v === "list" && selectMode) { setSelectMode(false); setSelected([]); setConfirmMultiDelete(false); return; }
@@ -1184,6 +1184,8 @@ function ShiftManager() {
           ? <JunbanView />
         : view === "report"
           ? <DailyReportView year={year} month={month} daysInMonth={daysInMonth} />
+        : view === "memo"
+          ? <MemoView member={member} />
           : <div
               key={`${year}-${month}`}
               className={slideDir === "left" ? "slide-in-left" : slideDir === "right" ? "slide-in-right" : ""}
@@ -1616,6 +1618,70 @@ function JunbanFieldRow({ label, busy, value, onChange, rows, placeholder, onGen
       </div>
       <textarea value={value} rows={rows} onChange={onChange} placeholder={placeholder}
         style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 16, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6 }} />
+    </div>
+  );
+}
+
+function MemoView({ member }) {
+  const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
+
+  const entries = React.useMemo(() => {
+    const result = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key || !key.startsWith("shifts:")) continue;
+      const rest = key.slice(7);
+      const colonIdx = rest.lastIndexOf(":");
+      if (colonIdx === -1) continue;
+      const m = rest.slice(0, colonIdx);
+      try {
+        const data = JSON.parse(localStorage.getItem(key) || "{}");
+        Object.entries(data).forEach(([dateStr, entry]) => {
+          if (entry && entry.memo && entry.memo.trim()) {
+            result.push({ date: dateStr, member: m, memo: entry.memo.trim(), status: entry.status || "" });
+          }
+        });
+      } catch {}
+    }
+    return result.sort((a, b) => b.date.localeCompare(a.date) || a.member.localeCompare(b.member));
+  }, []);
+
+  if (entries.length === 0) {
+    return <div style={{ textAlign: "center", padding: "60px 20px", color: "#bbb", fontSize: 11, letterSpacing: 2 }}>メモなし</div>;
+  }
+
+  let lastMonth = null;
+  return (
+    <div style={{ padding: "16px 16px 40px" }}>
+      {entries.map(({ date, member: m, memo, status }) => {
+        const [y, mo, d] = date.split("-").map(Number);
+        const dow = new Date(y, mo - 1, d).getDay();
+        const monthLabel = `${y}年${mo}月`;
+        const showMonth = monthLabel !== lastMonth;
+        lastMonth = monthLabel;
+        return (
+          <React.Fragment key={`${date}-${m}`}>
+            {showMonth && (
+              <div style={{ fontSize: 10, letterSpacing: 3, color: "#bbb", marginTop: 20, marginBottom: 8, paddingBottom: 6, borderBottom: "1px solid #e0dedd" }}>
+                {monthLabel}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 12, padding: "10px 0", borderBottom: "1px solid #f5f4f2", alignItems: "flex-start" }}>
+              <div style={{ minWidth: 32, textAlign: "center", paddingTop: 2 }}>
+                <div style={{ fontSize: 15, fontWeight: 300, color: dow === 0 ? "#c0392b" : dow === 6 ? "#888" : "#111", lineHeight: 1 }}>{d}</div>
+                <div style={{ fontSize: 8, letterSpacing: 1, color: dow === 0 ? "#c0392b" : "#bbb", marginTop: 2 }}>{WEEKDAYS[dow]}</div>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 3 }}>
+                  <span style={{ fontSize: 10, color: "#999" }}>{m}</span>
+                  {status && status !== "出勤" && <span style={{ fontSize: 9, color: "#ccc", border: "1px solid #e8e8e8", borderRadius: 3, padding: "1px 5px" }}>{status}</span>}
+                </div>
+                <div style={{ fontSize: 13, color: "#333", lineHeight: 1.7, wordBreak: "break-all" }}>{memo}</div>
+              </div>
+            </div>
+          </React.Fragment>
+        );
+      })}
     </div>
   );
 }
