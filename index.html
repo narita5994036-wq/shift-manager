@@ -1012,6 +1012,7 @@ function ShiftManager() {
       if (text.trim()) s[k] = { ...s[k], memo: text.trim() };
       else { const { memo, ...rest } = s[k]; s[k] = rest; }
       storage.set(sk, JSON.stringify(s));
+      window.dispatchEvent(new Event("memoupdate"));
       if (m === member) setShifts({ ...s });
       const all = {};
       MEMBERS.forEach(mem => { if (mem !== member) { try { const r = storage.get(`shifts:${mem}:${ym}`); if (r) all[mem] = JSON.parse(r); } catch {} } });
@@ -1625,7 +1626,7 @@ function JunbanFieldRow({ label, busy, value, onChange, rows, placeholder, onGen
 function MemoView({ member }) {
   const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 
-  const entries = React.useMemo(() => {
+  function readEntries() {
     const result = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
@@ -1644,6 +1645,13 @@ function MemoView({ member }) {
       } catch {}
     }
     return result.sort((a, b) => b.date.localeCompare(a.date) || a.member.localeCompare(b.member));
+  }
+
+  const [entries, setEntries] = React.useState(readEntries);
+  React.useEffect(() => {
+    const handler = () => setEntries(readEntries());
+    window.addEventListener("memoupdate", handler);
+    return () => window.removeEventListener("memoupdate", handler);
   }, []);
 
   if (entries.length === 0) {
