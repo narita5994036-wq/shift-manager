@@ -365,9 +365,6 @@ function PurchaseList({ entries, onAdd, onRemove, onUpdateFrame }) {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                 <div style={{ fontSize: 11, color: "#444", lineHeight: 1.8 }}>
                   <span style={{ fontSize: 9, color: "#bbb", marginRight: 4 }}>販売</span>{e.salesperson}
-                  <br />
-                  <span style={{ fontSize: 9, color: "#bbb", marginRight: 4 }}>サポ</span>
-                  <span style={{ color: e.supporter ? "#444" : "#ccc" }}>{e.supporter || "—"}</span>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, alignSelf: "flex-start" }}>
                   <div style={{ fontSize: 10, color: "#aaa", letterSpacing: 1 }}>{e.time}</div>
@@ -473,9 +470,8 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
   }
 
   // ── Purchases (2-step) ────────────────────────────
-  function pickSalesperson(staff) { setPurchaseFlow({ step: 2, salesperson: staff }); }
-  function pickSupporter(staff) {   // staff=null means skip
-    persist({ ...data, purchases: [...data.purchases, { salesperson: purchaseFlow.salesperson, supporter: staff, time: nowTime(), frames: ["", "", ""] }] });
+  function pickSalesperson(staff) {
+    persist({ ...data, purchases: [...data.purchases, { salesperson: staff, supporter: null, time: nowTime(), frames: ["", "", ""] }] });
     setPurchaseFlow(null);
   }
   function updatePurchaseFrame(purchaseIdx, frameIdx, value) {
@@ -548,14 +544,12 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
 
   // ── Modal picker ──────────────────────────────────
   const modalOpen = staffPicker || purchaseFlow;
-  const modalTitle = staffPicker === "prospects" ? "見込客担当" : staffPicker === "repairs" ? "修理担当"
-    : purchaseFlow?.step === 1 ? "販売担当" : "サポート担当";
+  const modalTitle = staffPicker === "prospects" ? "見込客担当" : staffPicker === "repairs" ? "修理担当" : "販売担当";
 
   function handleModalClose() { setStaffPicker(null); setPurchaseFlow(null); }
   function handleModalPick(m) {
     if (staffPicker) { addEntry(staffPicker, m); }
-    else if (purchaseFlow?.step === 1) { pickSalesperson(m); }
-    else { pickSupporter(m); }
+    else { pickSalesperson(m); }
   }
 
   return (
@@ -683,12 +677,6 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
                 }}>{m}</button>
               ))}
             </div>
-            {purchaseFlow?.step === 2 && (
-              <button onClick={() => pickSupporter(null)} style={{
-                width: "100%", marginTop: 10, padding: "13px 0", background: "none",
-                border: "1px solid #ddd", cursor: "pointer", fontSize: 9, letterSpacing: 3, color: "#bbb"
-              }}>Skip（サポートなし）</button>
-            )}
           </div>
         </div>
       )}
