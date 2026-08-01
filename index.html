@@ -556,6 +556,38 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
     return parts.join(" / ");
   }
 
+  function buildMemberMemoLine(m) {
+    const myFrames = data.purchases.filter(p => p.salesperson === m && (!p.type || p.type === "frame"));
+    const myAdj    = data.purchases.filter(p => p.salesperson === m && p.type === "adjustment");
+    const myLens   = data.purchases.filter(p => p.salesperson === m && p.type === "lens");
+    const parts = [];
+    const framesSummary = entries => entries.flatMap(e => (e.frames || []).filter(Boolean)).join("・");
+    if (myFrames.length > 0) { const f = framesSummary(myFrames); parts.push(`購入${myFrames.length}${f ? `[${f}]` : ""}`); }
+    if (myAdj.length   > 0) { parts.push(`調整なし${myAdj.length}`); }
+    if (myLens.length  > 0) { const lf = myLens.map(p => [p.lensName, p.refractive].filter(Boolean).join("/")).filter(Boolean).join("・"); parts.push(`レンズ${myLens.length}${lf ? `[${lf}]` : ""}`); }
+    return parts.join(" / ");
+  }
+
+  function saveSalespersonMemos() {
+    const ym = todayStr.slice(0, 7);
+    const salespersons = [...new Set(data.purchases.filter(p => p.salesperson).map(p => p.salesperson))];
+    salespersons.forEach(m => {
+      const line = buildMemberMemoLine(m);
+      if (!line) return;
+      const sk = `shifts:${m}:${ym}`;
+      try {
+        const raw = storage.get(sk);
+        const s = raw ? JSON.parse(raw) : {};
+        if (!s[todayStr]) s[todayStr] = { status: "出勤", startTime: "", endTime: "", breakTime: 60, memo: "" };
+        const prev = s[todayStr].memo ? s[todayStr].memo.trim() : "";
+        s[todayStr] = { ...s[todayStr], memo: prev ? `${prev}\n${line}` : line };
+        storage.set(sk, JSON.stringify(s));
+        if (m === member) setShifts({ ...s });
+      } catch(e) {}
+    });
+    window.dispatchEvent(new Event("memoupdate"));
+  }
+
   function copyToMemo() {
     const memo = buildMemoLine();
     if (!memo || !shifts || !saveShifts) return;
@@ -564,6 +596,7 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
       const prev = existing.memo ? existing.memo.trim() : "";
       saveShifts({ ...shifts, [todayStr]: { ...existing, memo: prev ? `${prev}\n${memo}` : memo } });
     }
+    saveSalespersonMemos();
     setMemoCopied(true);
     setTimeout(() => setMemoCopied(false), 1500);
   }
@@ -577,6 +610,7 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
         saveShifts({ ...shifts, [todayStr]: { ...existing, memo: prev ? `${prev}\n${memo}` : memo } });
       }
     }
+    saveSalespersonMemos();
     persist({ visitors: [], prospects: [], repairs: [], purchases: [] });
     setConfirmReset(false);
   }
