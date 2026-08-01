@@ -547,12 +547,6 @@ function CounterView({ member, year, month, shifts, saveShifts }) {
     const framesSummary = (entries) => entries.flatMap(e => (e.frames || []).filter(Boolean)).join("・");
     if (prCount > 0) { const s = staffSummary(data.prospects); const f = framesSummary(data.prospects); parts.push(`見込${prCount}${s ? `(${s})` : ""}${f ? `[${f}]` : ""}`); }
     if (rCount  > 0) { const s = staffSummary(data.repairs);   parts.push(`修理${rCount}${s ? `(${s})` : ""}`); }
-    const framePurchases = data.purchases.filter(p => !p.type || p.type === "frame");
-    const adjPurchases   = data.purchases.filter(p => p.type === "adjustment");
-    const lensPurchases  = data.purchases.filter(p => p.type === "lens");
-    if (framePurchases.length > 0) { const s = staffSummary(framePurchases, "salesperson"); const f = framesSummary(framePurchases); parts.push(`購入${framePurchases.length}${s ? `(${s})` : ""}${f ? `[${f}]` : ""}`); }
-    if (adjPurchases.length   > 0) { const s = staffSummary(adjPurchases, "salesperson"); parts.push(`調整なし${adjPurchases.length}${s ? `(${s})` : ""}`); }
-    if (lensPurchases.length  > 0) { const s = staffSummary(lensPurchases, "salesperson"); const lf = lensPurchases.map(p => [p.lensName, p.refractive].filter(Boolean).join("/")).filter(Boolean).join("・"); parts.push(`レンズ${lensPurchases.length}${s ? `(${s})` : ""}${lf ? `[${lf}]` : ""}`); }
     return parts.join(" / ");
   }
 
