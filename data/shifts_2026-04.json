@@ -12,7 +12,7 @@
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "MTG"
     },
     "2026-04-03": {
       "status": "休日",
@@ -224,7 +224,7 @@
       "startTime": "09:30",
       "endTime": "13:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "MTG"
     },
     "2026-04-03": {
       "status": "出勤",
@@ -436,7 +436,7 @@
       "startTime": "10:30",
       "endTime": "19:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "MTG"
     },
     "2026-04-03": {
       "status": "出勤",
@@ -648,7 +648,7 @@
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "MTG"
     },
     "2026-04-03": {
       "status": "出勤",

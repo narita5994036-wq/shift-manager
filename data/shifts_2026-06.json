@@ -5,7 +5,7 @@
       "startTime": "10:00",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "尾谷さん+1"
     },
     "2026-06-02": {
       "status": "休日",
@@ -26,7 +26,7 @@
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "MTG"
     },
     "2026-06-05": {
       "status": "休日",
@@ -75,21 +75,21 @@
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "ZEISS研修"
     },
     "2026-06-12": {
       "status": "出勤",
       "startTime": "10:30",
       "endTime": "19:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "倉庫移動"
     },
     "2026-06-13": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "倉庫移動"
     },
     "2026-06-14": {
       "status": "休日",
@@ -117,14 +117,14 @@
       "startTime": "10:00",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "尾谷さん+1"
     },
     "2026-06-18": {
       "status": "出勤",
       "startTime": "10:00",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "尾谷さん+1"
     },
     "2026-06-19": {
       "status": "休日",
@@ -238,7 +238,7 @@
       "startTime": "10:00",
       "endTime": "13:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "MTG"
     },
     "2026-06-05": {
       "status": "出勤",
@@ -294,21 +294,21 @@
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "倉庫移動"
     },
     "2026-06-13": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "倉庫移動"
     },
     "2026-06-14": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "倉庫移動"
     },
     "2026-06-15": {
       "status": "出勤",
@@ -371,7 +371,7 @@
       "startTime": "11:00",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "消防訓練8:30~"
     },
     "2026-06-24": {
       "status": "出勤",
@@ -420,7 +420,7 @@
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "消防訓練8:45~"
     }
   },
   "成田": {
@@ -450,7 +450,7 @@
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "MTG / 成田さん体調不良による早退。"
     },
     "2026-06-05": {
       "status": "出勤",
@@ -499,14 +499,14 @@
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "ZEISS研修"
     },
     "2026-06-12": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "倉庫移動"
     },
     "2026-06-13": {
       "status": "休日",
@@ -520,21 +520,21 @@
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "倉庫移動"
     },
     "2026-06-15": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "成田さん+1"
     },
     "2026-06-16": {
       "status": "出勤",
       "startTime": "10:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "成田さん+1"
     },
     "2026-06-17": {
       "status": "休日",
@@ -583,7 +583,7 @@
       "startTime": "08:30",
       "endTime": "19:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "成田さん＋1 / 消防訓練8:30~"
     },
     "2026-06-24": {
       "status": "休日",
@@ -632,7 +632,7 @@
       "startTime": "08:30",
       "endTime": "17:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "消防訓練8:45~"
     }
   },
   "中谷": {
@@ -662,7 +662,7 @@
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "MTG"
     },
     "2026-06-05": {
       "status": "出勤",
@@ -697,7 +697,7 @@
       "startTime": "09:30",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "平谷さん+1"
     },
     "2026-06-10": {
       "status": "休日",
@@ -711,28 +711,28 @@
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "ZEISS研修"
     },
     "2026-06-12": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "倉庫移動"
     },
     "2026-06-13": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "倉庫移動"
     },
     "2026-06-14": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "倉庫移動"
     },
     "2026-06-15": {
       "status": "休日",
@@ -746,7 +746,7 @@
       "startTime": "09:30",
       "endTime": "19:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "平谷さん+1"
     },
     "2026-06-17": {
       "status": "出勤",
@@ -767,7 +767,7 @@
       "startTime": "09:30",
       "endTime": "19:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "平谷さん+1"
     },
     "2026-06-20": {
       "status": "出勤",
@@ -844,7 +844,7 @@
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "消防訓練8:45~"
     }
   }
 }
