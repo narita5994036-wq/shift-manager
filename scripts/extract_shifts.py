@@ -16,8 +16,67 @@ NAME_MAP = {
     "hiratani":  "中谷",
 }
 
-def decode_pdf_str(b):
-    return ''.join(chr(c) for c in b if c != 0 and 0x20 <= c <= 0x7E)
+# PDF 備考欄のテキストに含まれる氏名 → アプリのメンバー名マッピング
+NOTE_NAME_PATTERNS = [
+    ("成田", "成田"),
+    ("正田", "正田"),
+    ("尾谷", "尾谷"),
+    ("平谷", "中谷"),
+    ("中谷", "中谷"),
+]
+
+NOTE_GAP_CONTINUE = 9  # この値以下のy差は同一メモの改行とみなす
+
+def parse_literal_string(s, start):
+    """s[start] は b'(' 。PDFリテラル文字列のエスケープを解釈しつつ内容を取り出す"""
+    i = start + 1
+    depth = 1
+    out = bytearray()
+    n = len(s)
+    while i < n and depth > 0:
+        c = s[i]
+        if c == 0x5C:  # backslash
+            if i + 1 >= n:
+                i += 1
+                continue
+            nc = s[i + 1]
+            if nc == 0x6E: out.append(0x0A); i += 2; continue
+            if nc == 0x72: out.append(0x0D); i += 2; continue
+            if nc == 0x74: out.append(0x09); i += 2; continue
+            if nc == 0x62: out.append(0x08); i += 2; continue
+            if nc == 0x66: out.append(0x0C); i += 2; continue
+            if nc in (0x28, 0x29, 0x5C):
+                out.append(nc); i += 2; continue
+            if 0x30 <= nc <= 0x37:  # 8進エスケープ
+                j = i + 1
+                digits = b""
+                while j < n and len(digits) < 3 and 0x30 <= s[j] <= 0x37:
+                    digits += s[j:j + 1]
+                    j += 1
+                out.append(int(digits, 8) & 0xFF)
+                i = j
+                continue
+            if nc in (0x0A, 0x0D):  # 行末エスケープ（継続行）
+                i += 2
+                if nc == 0x0D and i < n and s[i] == 0x0A:
+                    i += 1
+                continue
+            out.append(nc); i += 2; continue
+        elif c == 0x28:
+            depth += 1; out.append(c); i += 1
+        elif c == 0x29:
+            depth -= 1
+            if depth > 0: out.append(c)
+            i += 1
+        else:
+            out.append(c); i += 1
+    return bytes(out), i
+
+def decode_text(b):
+    # このPDFのフォントは全て2バイト(UTF-16BE相当)でエンコードされている
+    if len(b) % 2 == 1:
+        b = b + b"\x00"
+    return b.decode("utf-16-be", errors="replace")
 
 def extract_entries(pdf_path):
     with open(pdf_path, 'rb') as f:
@@ -39,7 +98,6 @@ def extract_entries(pdf_path):
     # 最大のストリームをコンテンツとして使用
     raw = max(streams, key=len)
     entries = []
-    px, py = 0.0, 0.0
     for block in re.findall(rb'BT(.*?)ET', raw, re.DOTALL):
         px, py = 0.0, 0.0
         for line in block.split(b'\n'):
@@ -48,9 +106,11 @@ def extract_entries(pdf_path):
             if tm: px, py = float(tm.group(5)), float(tm.group(6))
             td = re.match(rb'(-?[\d.]+)\s+(-?[\d.]+)\s+Td', line)
             if td: px += float(td.group(1)); py += float(td.group(2))
-            tj = re.search(rb'\((.*?)\)\s*Tj', line)
-            if tj:
-                entries.append((round(py, 1), round(px, 1), decode_pdf_str(tj.group(1))))
+            if b'Tj' in line:
+                pidx = line.find(b'(')
+                if pidx != -1:
+                    content, _ = parse_literal_string(line, pidx)
+                    entries.append((round(py, 1), round(px, 1), decode_text(content)))
     return entries
 
 def build_day_map(entries):
@@ -126,6 +186,70 @@ def find_time_rows(entries, name_y, day_header_y):
     end_y   = sorted_ys[1]
     return {x: t for x, t in y_groups[start_y]}, {x: t for x, t in y_groups[end_y]}
 
+def extract_notes(entries, header_y, topmost_emp_y, x_day):
+    """日付ヘッダーと従業員行の間にある備考欄のテキストを、日ごとのメモ文字列リストに変換する"""
+    y_min = topmost_emp_y + 10
+    y_max = header_y - 15
+    items = [(y, x, t) for y, x, t in entries if y_min < y < y_max]
+    if not items:
+        return {}
+
+    top_row_y = max(y for y, x, t in items)
+
+    by_day = {}
+    for y, x, t in items:
+        d = nearest_day(x, x_day)
+        by_day.setdefault(d, []).append((y, x, t))
+
+    # 日ごとに改行(小さいy差)を連結し、段落区切り(大きいy差)でメモを分割
+    paras_by_day = {}
+    for d, group in by_day.items():
+        group.sort(key=lambda e: (-e[0], e[1]))
+        paras = []
+        buf = ""
+        last_y = None
+        for y, x, t in group:
+            if last_y is not None and 0 < (last_y - y) <= NOTE_GAP_CONTINUE:
+                buf += t
+            else:
+                if buf: paras.append(buf)
+                buf = t
+            last_y = y
+        if buf: paras.append(buf)
+        paras_by_day[d] = {"paras": paras, "first_y": group[0][0], "last_y": group[-1][0]}
+
+    # 折り返しでx座標が隣の日の列にずれ込み、誤って別日として分割されたメモを前日に統合
+    for d in sorted(paras_by_day):
+        info = paras_by_day[d]
+        if abs(info["first_y"] - top_row_y) < 0.05:
+            continue
+        prev = paras_by_day.get(d - 1)
+        if not prev or not prev["paras"]:
+            continue
+        gap = prev["last_y"] - info["first_y"]
+        if 0 < gap <= NOTE_GAP_CONTINUE:
+            first_para = info["paras"].pop(0)
+            prev["paras"][-1] += first_para
+
+    return {d: v["paras"] for d, v in paras_by_day.items() if v["paras"]}
+
+def apply_notes(result, notes_by_day, year, month):
+    """備考メモを該当メンバー(氏名が明記されていればその人のみ、なければ出勤者全員)のメモ欄に反映"""
+    for day_num, notes in notes_by_day.items():
+        dk = f"{year}-{month:02d}-{day_num:02d}"
+        for note in notes:
+            matched = sorted({jp for pat, jp in NOTE_NAME_PATTERNS if pat in note and jp in result})
+            if matched:
+                targets = matched
+            else:
+                targets = [jp for jp in result
+                           if dk in result[jp] and result[jp][dk]["status"] == "出勤"]
+            for jp in targets:
+                shift = result[jp].get(dk)
+                if not shift: continue
+                prev = shift.get("memo", "")
+                shift["memo"] = f"{prev} / {note}" if prev else note
+
 def make_shift_obj(start, end):
     return {"status": "出勤", "startTime": start, "endTime": end, "breakTime": 60, "memo": ""}
 
@@ -176,6 +300,14 @@ def extract(pdf_path):
 
         result[jp_name] = member_shifts
         print(f"  {jp_name}: {len(work_days)}日出勤")
+
+    if employees and result:
+        topmost_emp_y = max(y for y, _ in employees)
+        notes_by_day = extract_notes(entries, header_y, topmost_emp_y, x_day)
+        apply_notes(result, notes_by_day, year, month)
+        note_count = sum(len(v) for v in notes_by_day.values())
+        if note_count:
+            print(f"  備考メモ: {note_count}件反映")
 
     return result, year, month
 

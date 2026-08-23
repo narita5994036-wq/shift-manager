@@ -96,7 +96,7 @@
       "startTime": "10:00",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "尾谷さん+1時間"
     },
     "2026-07-15": {
       "status": "出勤",
@@ -215,7 +215,7 @@
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "尾谷さん健診13:00~ / 週次会議11:00~"
     }
   },
   "正田": {
@@ -238,7 +238,7 @@
       "startTime": "10:30",
       "endTime": "19:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     },
     "2026-07-04": {
       "status": "出勤",
@@ -280,14 +280,14 @@
       "startTime": "11:00",
       "endTime": "12:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "MTG 平谷さん、正田＋１時間"
     },
     "2026-07-10": {
       "status": "出勤",
       "startTime": "10:30",
       "endTime": "19:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     },
     "2026-07-11": {
       "status": "出勤",
@@ -315,7 +315,7 @@
       "startTime": "09:00",
       "endTime": "17:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "正田特別休暇消化"
     },
     "2026-07-15": {
       "status": "休日",
@@ -385,7 +385,7 @@
       "startTime": "10:30",
       "endTime": "19:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     },
     "2026-07-25": {
       "status": "出勤",
@@ -434,7 +434,7 @@
       "startTime": "10:30",
       "endTime": "19:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     }
   },
   "成田": {
@@ -457,7 +457,7 @@
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     },
     "2026-07-04": {
       "status": "休日",
@@ -506,7 +506,7 @@
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     },
     "2026-07-11": {
       "status": "休日",
@@ -583,7 +583,7 @@
       "startTime": "08:30",
       "endTime": "17:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "成田さん健診8:30~"
     },
     "2026-07-22": {
       "status": "休日",
@@ -604,7 +604,7 @@
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     },
     "2026-07-25": {
       "status": "休日",
@@ -646,14 +646,14 @@
       "startTime": "09:30",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "成田さん+1時間"
     },
     "2026-07-31": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     }
   },
   "中谷": {
@@ -676,7 +676,7 @@
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     },
     "2026-07-04": {
       "status": "出勤",
@@ -718,14 +718,14 @@
       "startTime": "11:00",
       "endTime": "12:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "MTG 平谷さん、正田＋１時間"
     },
     "2026-07-10": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     },
     "2026-07-11": {
       "status": "出勤",
@@ -823,7 +823,7 @@
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     },
     "2026-07-25": {
       "status": "出勤",
@@ -872,7 +872,7 @@
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~"
     }
   }
 }
