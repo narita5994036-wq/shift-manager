@@ -1868,7 +1868,7 @@ function JunbanView() {
     setDynItems(next); saveData(next, personal);
   };
   const addDynItem = () => {
-    if (!dynItems || dynItems.length >= 5) return;
+    if (!dynItems || dynItems.length >= 8) return;
     const next = [...dynItems, mkDynItem()];
     setDynItems(next); saveData(next, personal);
   };
@@ -2077,10 +2077,10 @@ function JunbanView() {
           </div>
         ))}
 
-        {dynItems.length < 5 && (
+        {dynItems.length < 8 && (
           <button onClick={addDynItem}
             style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 28, background: "none", border: "1px dashed #d0d0d0", borderRadius: 8, padding: "9px 16px", cursor: "pointer", color: "#aaa", fontSize: 12, width: "100%" }}>
-            <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> 項目を追加（{dynItems.length}/5）
+            <span style={{ fontSize: 18, lineHeight: 1 }}>+</span> 項目を追加（{dynItems.length}/8）
           </button>
         )}
 
