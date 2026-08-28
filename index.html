@@ -1668,10 +1668,10 @@ const JUNBAN_KPI_OPTIONS = [
   "新規来店者数", "顧客来店者数", "フレーム試着者数", "販売件数",
 ];
 
-function mkDynItem() { return { uid: Math.random().toString(36).slice(2,7), label: "", achieved: null, failReason: "", improvement: "", achieveReason: "", goodPractice: "" }; }
+function mkDynItem() { return { uid: Math.random().toString(36).slice(2,7), label: "", mainTopic: "", achieved: null, failReason: "", improvement: "", achieveReason: "", goodPractice: "" }; }
 function mkPersonal() { return { achieved: null, goalText: "", targetValue: "", actualValue: "", failReason: "", improvement: "", achieveReason: "", goodPractice: "" }; }
 function migrateItem(it) {
-  return { goalText: "", targetValue: "", actualValue: "", failReason: it.failReason ?? it.reflection ?? "", improvement: it.improvement ?? "", achieveReason: it.achieveReason ?? "", goodPractice: it.goodPractice ?? "", ...it };
+  return { goalText: "", targetValue: "", actualValue: "", mainTopic: it.mainTopic ?? "", failReason: it.failReason ?? it.reflection ?? "", improvement: it.improvement ?? "", achieveReason: it.achieveReason ?? "", goodPractice: it.goodPractice ?? "", ...it };
 }
 
 const DEFAULT_JUNBAN_PROMPT = `あなたは小売店舗スタッフの週次KPI報告（週報）作成を補助するアシスタントです。
@@ -1907,7 +1907,7 @@ function JunbanView() {
     return (data.content?.[0]?.text || "").trim();
   };
 
-  const generateField = async (genKey, label, achieved, currentText, field, onDone, failReasonText) => {
+  const generateField = async (genKey, label, achieved, currentText, field, onDone, failReasonText, mainTopic) => {
     if (!apiKey) { setShowApiKey(true); setApiKeyInput(""); return; }
     setFieldGen(s => ({ ...s, [genKey]: true }));
     const achievedLabel = achieved === true ? "達成" : achieved === false ? "未達" : "未判定";
@@ -1915,7 +1915,8 @@ function JunbanView() {
     let prompt;
     const shopContext = "当店は新規客が中心でリピート客は稀なため、リピート向上・再来店促進に関する内容は含めないこと。「顧客」は購入履歴のあるリピーターのお客様を指す（新規客とは区別する）。当店は心斎橋PARCO2階のテナント型店舗であり、路面店ではない（路面店を前提とした表現は使わないこと）。新規客へのアプローチとしてPOP設置は行えない（MYKITA店舗の規定のため）ので提案に含めないこと。既存客（顧客）へのアプローチ手段は電話・メール・DMに限られるため、それ以外の手段は提案に含めないこと。";
     if (field === "failReason") {
-      prompt = `あなたは小売店スタッフです。以下のKPI項目について「未達理由と反省点」を60〜100字で記述してください。スタッフ目線で具体的に。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 未達${memo}`;
+      const topicRef = mainTopic?.trim() ? `\nメイントピック: ${mainTopic.trim()}（この内容を軸に記述すること）` : "";
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「未達理由と反省点」を60〜100字で記述してください。スタッフ目線で具体的に。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 未達${topicRef}${memo}`;
     } else if (field === "improvement") {
       const failRef = failReasonText?.trim() ? `\n未達理由と反省点: ${failReasonText.trim()}` : "";
       prompt = `あなたは小売店スタッフです。以下のKPI項目について「改善策と次週の取り組み」を60〜100字で記述してください。未達理由と反省点の内容を踏まえた具体的な行動ベースで記述すること。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: ${achievedLabel}${failRef}${memo}`;
@@ -2047,6 +2048,9 @@ function JunbanView() {
                   style={{ background: "none", border: "none", cursor: "pointer", fontSize: 20, color: "#ccc", padding: "0 4px", lineHeight: 1 }}>×</button>
               )}
             </div>
+            <input value={item.mainTopic} onChange={e => updateDyn(item.uid, { mainTopic: e.target.value })}
+              placeholder="メイントピック（任意）"
+              style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 6, padding: "7px 10px", fontSize: 12, outline: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", marginBottom: 10 }} />
             <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
               {toggleBtn(item.achieved, "#27ae60", "達成", () => updateDyn(item.uid, { achieved: item.achieved === true ? null : true }))}
               {toggleBtn(item.achieved, "#e74c3c", "未達", () => updateDyn(item.uid, { achieved: item.achieved === false ? null : false }))}
@@ -2057,7 +2061,7 @@ function JunbanView() {
                   value={item.failReason} rows={3} placeholder="未達の要因・反省点など"
                   onChange={e => updateDyn(item.uid, { failReason: e.target.value })}
                   onClear={() => updateDyn(item.uid, { failReason: "" })}
-                  onGenerate={() => generateField(`${item.uid}-failReason`, item.label || "KPI項目", item.achieved, item.failReason, "failReason", txt => updateDyn(item.uid, { failReason: txt }))} />
+                  onGenerate={() => generateField(`${item.uid}-failReason`, item.label || "KPI項目", item.achieved, item.failReason, "failReason", txt => updateDyn(item.uid, { failReason: txt }), null, item.mainTopic)} />
                 <JunbanFieldRow label="改善策と次週の取り組み" busy={fieldGen[`${item.uid}-improvement`]}
                   value={item.improvement} rows={3} placeholder="具体的な行動・次週に向けての取り組みなど"
                   onChange={e => updateDyn(item.uid, { improvement: e.target.value })}
