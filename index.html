@@ -1701,33 +1701,29 @@ const DEFAULT_JUNBAN_PROMPT = `あなたは小売店舗スタッフの週次KPI�
 - 当店はエスカレーターエリアから視認できる好立地にあるため、未達理由として「認知不足」「認知度不足」等の立地・認知を理由にした言い訳は使わないこと
 - 本文のみ出力（余分なマークダウン・記号は不要）`;
 
-const PERIOD_STARTS = [1, 8, 15, 22];
-
 function periodStartStr(date) {
   const d = new Date(date);
-  const day = d.getDate();
-  const sd = day < 8 ? 1 : day < 15 ? 8 : day < 22 ? 15 : 22;
-  return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(sd).padStart(2,"0")].join("-");
+  const day = d.getDay(); // 0=日〜6=土
+  const diff = (day - 5 + 7) % 7; // 直近の金曜日までの日数
+  d.setDate(d.getDate() - diff);
+  return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
 }
 
 function addPeriods(str, n) {
   const d = new Date(str + "T00:00:00");
-  let pn = PERIOD_STARTS.indexOf(d.getDate());
-  if (pn === -1) pn = 0;
-  let year = d.getFullYear(), month = d.getMonth();
-  let next = pn + n;
-  while (next < 0) { next += 4; month--; if (month < 0) { month = 11; year--; } }
-  while (next >= 4) { next -= 4; month++; if (month > 11) { month = 0; year++; } }
-  return [year, String(month+1).padStart(2,"0"), String(PERIOD_STARTS[next]).padStart(2,"0")].join("-");
+  d.setDate(d.getDate() + n * 7);
+  return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
 }
 
 function formatPeriodRange(startStr) {
-  const d = new Date(startStr + "T00:00:00");
-  const year = d.getFullYear(), month = d.getMonth()+1, sd = d.getDate();
-  const pn = PERIOD_STARTS.indexOf(sd) + 1;
-  const lastDay = new Date(year, d.getMonth()+1, 0).getDate();
-  const ed = sd === 22 ? lastDay : sd + 6;
-  return `${year}年${month}月 第${pn}週（${sd}日〜${ed}日）`;
+  const start = new Date(startStr + "T00:00:00");
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const sy = start.getFullYear(), sm = start.getMonth()+1, sd = start.getDate();
+  const ey = end.getFullYear(), em = end.getMonth()+1, ed = end.getDate();
+  const startLabel = `${sy}年${sm}月${sd}日`;
+  const endLabel = sy === ey ? `${em}月${ed}日` : `${ey}年${em}月${ed}日`;
+  return `${startLabel}(金)〜${endLabel}(木)`;
 }
 
 function JunbanSpinner() {
