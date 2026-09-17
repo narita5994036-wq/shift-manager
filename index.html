@@ -1726,6 +1726,29 @@ function formatPeriodRange(startStr) {
   return `${startLabel}(金)〜${endLabel}(木)`;
 }
 
+// ── データ移行: 週報の保存キーを月内4分割 → 金曜始まり週に変換 ──
+(() => {
+  if (storage.get("migration:junban→金曜週")) return;
+  try {
+    const oldStarts = new Set([1, 8, 15, 22]);
+    Object.keys(localStorage).forEach(key => {
+      const m = key.match(/^junban:(\d{4}-\d{2})-(\d{2})$/);
+      if (!m) return;
+      const day = Number(m[2]);
+      if (!oldStarts.has(day)) return;
+      const oldStart = `${m[1]}-${m[2]}`;
+      const newKey = `junban:${periodStartStr(oldStart)}`;
+      if (newKey === key) return;
+      const val = localStorage.getItem(key);
+      if (val && !localStorage.getItem(newKey)) {
+        localStorage.setItem(newKey, val);
+        localStorage.removeItem(key);
+      }
+    });
+    storage.set("migration:junban→金曜週", "1");
+  } catch (e) {}
+})();
+
 function JunbanSpinner() {
   return <span style={{ display: "inline-block", width: 8, height: 8, border: "1.5px solid rgba(76,122,181,0.3)", borderTopColor: "#4c7ab5", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />;
 }
