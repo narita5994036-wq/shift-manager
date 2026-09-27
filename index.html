@@ -906,9 +906,16 @@ function ShiftManager() {
   async function loadPDFData(y, m) {
     setPdfLoadState("loading");
     const url = `https://raw.githubusercontent.com/narita5994036-wq/shift-manager/main/data/shifts_${y}-${String(m).padStart(2,"0")}.json`;
+    const MAX_RETRIES = 7;      // アップロード直後はGitHub Actionsの処理・CDN反映待ちで404になるため、404時のみリトライする
+    const RETRY_DELAY_MS = 8000;
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      let res;
+      for (let attempt = 0; ; attempt++) {
+        res = await fetch(url, { cache: "no-store" });
+        if (res.ok) break;
+        if (res.status !== 404 || attempt >= MAX_RETRIES) throw new Error(`HTTP ${res.status}`);
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
+      }
       const pdfData = await res.json();
       // キーの前後の空白・不可視文字を除去して正規化
       Object.keys(pdfData).forEach(key => {
