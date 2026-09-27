@@ -1,421 +1,435 @@
 {
   "尾谷": {
-    "2026-09-01": {
+    "2026-10-01": {
       "status": "出勤",
       "startTime": "09:30",
-      "endTime": "18:30",
+      "endTime": "19:00",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-02": {
+    "2026-10-02": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-03": {
+    "2026-10-03": {
       "status": "出勤",
-      "startTime": "10:00",
-      "endTime": "20:30",
+      "startTime": "09:30",
+      "endTime": "18:30",
       "breakTime": 60,
-      "memo": "尾谷さん+1.5H / MTG"
+      "memo": ""
     },
-    "2026-09-04": {
+    "2026-10-04": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-05": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-06": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-05": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-06": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-07": {
+    "2026-10-07": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-08": {
+    "2026-10-08": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-09": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-09": {
+    "2026-10-10": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-11": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-12": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-13": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-14": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-15": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-16": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-17": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-10": {
+    "2026-10-18": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-19": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-20": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-21": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-22": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-23": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-24": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-25": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-26": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-27": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-28": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-29": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-11": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-12": {
+    "2026-10-30": {
       "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-13": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-14": {
-      "status": "出勤",
-      "startTime": "11:00",
+      "startTime": "10:00",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "週次会議11:00~ / (仮予定)識学勉強会 / ティング17:00~ / 尾谷さん9時間勤務"
     },
-    "2026-09-15": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-16": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-17": {
-      "status": "出勤",
-      "startTime": "09:00",
-      "endTime": "17:00",
-      "breakTime": 60,
-      "memo": "尾谷さん有給消化 / LIDIAミーティング17:00~"
-    },
-    "2026-09-18": {
+    "2026-10-31": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-19": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-20": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-21": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-22": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-23": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": "尾谷さん+1.5H"
-    },
-    "2026-09-24": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-25": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-26": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-27": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-28": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-29": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-30": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
       "breakTime": 60,
       "memo": ""
     }
   },
   "正田": {
-    "2026-09-01": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
+    "2026-10-01": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-02": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": "LIDIAミーティング17:00~"
-    },
-    "2026-09-03": {
-      "status": "出勤",
-      "startTime": "10:00",
-      "endTime": "13:00",
-      "breakTime": 60,
-      "memo": "MTG / 正田+3H"
-    },
-    "2026-09-04": {
+    "2026-10-02": {
       "status": "出勤",
       "startTime": "10:00",
       "endTime": "19:00",
       "breakTime": 60,
-      "memo": "週次会議11:00~"
+      "memo": ""
     },
-    "2026-09-05": {
+    "2026-10-03": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-06": {
+    "2026-10-04": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-07": {
+    "2026-10-05": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-08": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": "識学勉強会11:30~13:00"
-    },
-    "2026-09-09": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-10": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-11": {
+    "2026-10-06": {
       "status": "出勤",
       "startTime": "10:00",
-      "endTime": "19:00",
-      "breakTime": 60,
-      "memo": "週次会議11:00~"
-    },
-    "2026-09-12": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-13": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-14": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-15": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-16": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-17": {
-      "status": "出勤",
-      "startTime": "11:00",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": "LIDIAミーティング17:00~"
+      "memo": "正田 9時間勤務"
     },
-    "2026-09-18": {
-      "status": "出勤",
-      "startTime": "10:00",
-      "endTime": "19:00",
-      "breakTime": 60,
-      "memo": "週次会議11:00~"
-    },
-    "2026-09-19": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-20": {
-      "status": "出勤",
-      "startTime": "11:00",
-      "endTime": "20:00",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-21": {
+    "2026-10-07": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-22": {
+    "2026-10-08": {
+      "status": "出勤",
+      "startTime": "09:00",
+      "endTime": "17:00",
+      "breakTime": 60,
+      "memo": "正田 有給消化"
+    },
+    "2026-10-09": {
+      "status": "出勤",
+      "startTime": "10:00",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": "週次会議11:00~"
+    },
+    "2026-10-10": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-23": {
+    "2026-10-11": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-12": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-13": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-14": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-15": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-16": {
+      "status": "出勤",
+      "startTime": "10:00",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": "週次会議11:00~ / ティング17:00~"
+    },
+    "2026-10-17": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-18": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-19": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-20": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-21": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-24": {
+    "2026-10-22": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-25": {
+    "2026-10-23": {
       "status": "出勤",
       "startTime": "10:00",
       "endTime": "19:00",
       "breakTime": 60,
       "memo": "週次会議11:00~"
     },
-    "2026-09-26": {
+    "2026-10-24": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-27": {
+    "2026-10-25": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-28": {
+    "2026-10-26": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-29": {
+    "2026-10-27": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": "識学勉強会11:30~13:00"
+      "memo": "(仮予定)識学勉強会"
     },
-    "2026-09-30": {
+    "2026-10-28": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-29": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-30": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": "週次会議11:00~ / (仮予定)識学勉強会 / ティング17:00~"
+    },
+    "2026-10-31": {
       "status": "出勤",
       "startTime": "11:00",
       "endTime": "20:00",
@@ -424,422 +438,436 @@
     }
   },
   "成田": {
-    "2026-09-01": {
+    "2026-10-01": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-02": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-02": {
+    "2026-10-03": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": "LIDIAミーティング17:00~"
+      "memo": ""
     },
-    "2026-09-03": {
+    "2026-10-04": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-04": {
+    "2026-10-05": {
       "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-06": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-07": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-08": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-09": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
       "breakTime": 60,
       "memo": "週次会議11:00~"
     },
-    "2026-09-05": {
+    "2026-10-10": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-06": {
+    "2026-10-11": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-07": {
+    "2026-10-12": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "20:00",
       "breakTime": 60,
-      "memo": "成田さん+1.5H"
+      "memo": "成田さん9時間勤務"
     },
-    "2026-09-08": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": "識学勉強会11:30~13:00"
-    },
-    "2026-09-09": {
+    "2026-10-13": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-10": {
+    "2026-10-14": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-11": {
-      "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
-      "breakTime": 60,
-      "memo": "週次会議11:00~"
-    },
-    "2026-09-12": {
-      "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-13": {
-      "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-14": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-15": {
+    "2026-10-15": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-16": {
+    "2026-10-16": {
       "status": "出勤",
       "startTime": "09:30",
-      "endTime": "20:00",
+      "endTime": "18:30",
       "breakTime": 60,
-      "memo": "成田さん+1.5H"
+      "memo": "週次会議11:00~ / ティング17:00~"
     },
-    "2026-09-17": {
+    "2026-10-17": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-18": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-18": {
+    "2026-10-19": {
       "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-20": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-21": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-22": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-23": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
       "breakTime": 60,
       "memo": "週次会議11:00~"
     },
-    "2026-09-19": {
+    "2026-10-24": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-20": {
+    "2026-10-25": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-21": {
+    "2026-10-26": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-22": {
+    "2026-10-27": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": ""
+      "memo": "(仮予定)識学勉強会"
     },
-    "2026-09-23": {
+    "2026-10-28": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-24": {
+    "2026-10-29": {
       "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
+      "startTime": "09:30",
+      "endTime": "19:00",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-25": {
-      "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
-      "breakTime": 60,
-      "memo": "週次会議11:00~"
-    },
-    "2026-09-26": {
+    "2026-10-30": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-27": {
+    "2026-10-31": {
       "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-28": {
-      "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-29": {
-      "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
-      "breakTime": 60,
-      "memo": "識学勉強会11:30~13:00"
-    },
-    "2026-09-30": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
+      "startTime": "09:30",
+      "endTime": "18:30",
       "breakTime": 60,
       "memo": ""
     }
   },
   "中谷": {
-    "2026-09-01": {
+    "2026-10-01": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-02": {
+    "2026-10-02": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": "LIDIAミーティング17:00~"
+      "memo": ""
     },
-    "2026-09-03": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "19:00",
+    "2026-10-03": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
       "breakTime": 60,
-      "memo": "MTG"
+      "memo": ""
     },
-    "2026-09-04": {
+    "2026-10-04": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-05": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-06": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-07": {
       "status": "出勤",
       "startTime": "09:30",
-      "endTime": "18:30",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": "平谷さん9時間"
+    },
+    "2026-10-08": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-09": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
       "breakTime": 60,
       "memo": "週次会議11:00~"
     },
-    "2026-09-05": {
+    "2026-10-10": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-06": {
+    "2026-10-11": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-07": {
+    "2026-10-12": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-08": {
+    "2026-10-13": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
-      "memo": "識学勉強会11:30~13:00"
+      "memo": ""
     },
-    "2026-09-09": {
+    "2026-10-14": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-15": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-16": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~ / ティング17:00~"
+    },
+    "2026-10-17": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-10": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "19:30",
-      "breakTime": 60,
-      "memo": "平谷さん+1H"
-    },
-    "2026-09-11": {
+    "2026-10-18": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-19": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-20": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-21": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-22": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-10-23": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
       "breakTime": 60,
       "memo": "週次会議11:00~"
     },
-    "2026-09-12": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-13": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-14": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "19:30",
-      "breakTime": 60,
-      "memo": "平谷さん+1H"
-    },
-    "2026-09-15": {
+    "2026-10-24": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-16": {
+    "2026-10-25": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-17": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "19:30",
-      "breakTime": 60,
-      "memo": "LIDIAミーティング17:00~ / 平谷さん+1H"
-    },
-    "2026-09-18": {
+    "2026-10-26": {
       "status": "出勤",
       "startTime": "09:30",
       "endTime": "18:30",
       "breakTime": 60,
-      "memo": "週次会議11:00~"
+      "memo": ""
     },
-    "2026-09-19": {
+    "2026-10-27": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": "(仮予定)識学勉強会"
+    },
+    "2026-10-28": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-20": {
+    "2026-10-29": {
+      "status": "出勤",
+      "startTime": "09:00",
+      "endTime": "17:00",
+      "breakTime": 60,
+      "memo": "平谷さん有休消化"
+    },
+    "2026-10-30": {
       "status": "休日",
       "startTime": "",
       "endTime": "",
       "breakTime": 60,
       "memo": ""
     },
-    "2026-09-21": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-22": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-23": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-24": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-25": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": "週次会議11:00~"
-    },
-    "2026-09-26": {
-      "status": "出勤",
-      "startTime": "11:30",
-      "endTime": "20:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-27": {
-      "status": "休日",
-      "startTime": "",
-      "endTime": "",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-28": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": ""
-    },
-    "2026-09-29": {
-      "status": "出勤",
-      "startTime": "09:30",
-      "endTime": "18:30",
-      "breakTime": 60,
-      "memo": "識学勉強会11:30~13:00"
-    },
-    "2026-09-30": {
+    "2026-10-31": {
       "status": "出勤",
       "startTime": "11:30",
       "endTime": "20:30",
