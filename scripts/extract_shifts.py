@@ -138,11 +138,24 @@ def build_day_map(entries):
 def nearest_day(x, x_day):
     return x_day[min(x_day.keys(), key=lambda k: abs(k - x))]
 
+JP_NAME_ROW = re.compile(r'^(' + '|'.join(re.escape(s) for s, _ in NOTE_NAME_PATTERNS) + r')\s+\S+\([^)]*\)$')
+
 def detect_employees(entries):
-    """英字名（姓 名 形式）の行を検出してy座標とマッピングを返す"""
+    """氏名行を検出してy座標とマッピングを返す
+    英字表記（姓 名 形式）と、2026年11月以降の日本語表記（姓 名(社員番号) 形式）の両方に対応
+    """
     employees = []
     for y, x, t in entries:
         if x > 100: continue
+        t_stripped = t.strip()
+
+        jp_match = JP_NAME_ROW.match(t_stripped)
+        if jp_match:
+            surname = jp_match.group(1)
+            jp_name = next(jp for s, jp in NOTE_NAME_PATTERNS if s == surname)
+            employees.append((y, jp_name))
+            continue
+
         # 非アルファベット文字を除去、小文字→大文字の境界にスペースを挿入
         cleaned = re.sub(r'[^A-Za-z ]', ' ', t)
         cleaned = re.sub(r'([a-z])([A-Z])', r'\1 \2', cleaned).strip()
