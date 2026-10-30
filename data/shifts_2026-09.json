@@ -113,11 +113,11 @@
       "memo": ""
     },
     "2026-09-17": {
-      "status": "出勤",
-      "startTime": "09:00",
-      "endTime": "17:00",
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
       "breakTime": 60,
-      "memo": "尾谷さん有給消化 / LIDIAミーティング17:00~"
+      "memo": "有給休暇"
     },
     "2026-09-18": {
       "status": "休日",

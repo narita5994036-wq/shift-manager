@@ -247,11 +247,22 @@ def extract_notes(entries, header_y, topmost_emp_y, x_day):
     return {d: v["paras"] for d, v in paras_by_day.items() if v["paras"]}
 
 def apply_notes(result, notes_by_day, year, month):
-    """備考メモを該当メンバー(氏名が明記されていればその人のみ、なければ出勤者全員)のメモ欄に反映"""
+    """備考メモを該当メンバー(氏名が明記されていればその人のみ、なければ出勤者全員)のメモ欄に反映
+    「〇〇有給消化」のように氏名+有給が明記されたメモは、該当日を休日・メモ「有給休暇」に上書きする
+    """
     for day_num, notes in notes_by_day.items():
         dk = f"{year}-{month:02d}-{day_num:02d}"
         for note in notes:
             matched = sorted({jp for pat, jp in NOTE_NAME_PATTERNS if pat in note and jp in result})
+            if matched and "有給" in note:
+                for jp in matched:
+                    shift = result[jp].get(dk)
+                    if not shift: continue
+                    shift["status"] = "休日"
+                    shift["startTime"] = ""
+                    shift["endTime"] = ""
+                    shift["memo"] = "有給休暇"
+                continue
             if matched:
                 targets = matched
             else:
