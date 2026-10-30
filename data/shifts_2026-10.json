@@ -269,11 +269,11 @@
       "memo": ""
     },
     "2026-10-08": {
-      "status": "出勤",
-      "startTime": "09:00",
-      "endTime": "17:00",
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
       "breakTime": 60,
-      "memo": "正田 有給消化"
+      "memo": "有給休暇"
     },
     "2026-10-09": {
       "status": "出勤",
