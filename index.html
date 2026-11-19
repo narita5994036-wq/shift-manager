@@ -1765,7 +1765,27 @@ function JunbanSpinner() {
   return <span style={{ display: "inline-block", width: 8, height: 8, border: "1.5px solid rgba(76,122,181,0.3)", borderTopColor: "#4c7ab5", borderRadius: "50%", animation: "spin 0.7s linear infinite" }} />;
 }
 
-function JunbanFieldRow({ label, busy, value, onChange, rows, placeholder, onGenerate, onClear }) {
+// 空欄でAI生成する際に選択式で方向性を指定できるプリセット候補
+const FIELD_PRESETS = {
+  failReason: ["声掛け・ヒアリングの数が不足した", "商品説明や提案が具体的でなかった", "競合品との比較で優位性を十分に伝えられなかった", "クロージングのタイミングを逃した"],
+  improvement: ["声掛け・ヒアリングの質と量を増やす", "商品の強み・特徴をより具体的に伝える", "競合品との比較での優位性を丁寧に説明する", "クロージングのタイミングを意識する"],
+  achieveReason: ["積極的な声掛け・ヒアリングができた", "お客様の用途や予算に合わせた具体的な提案ができた", "商品の強み・特徴を丁寧に伝えられた", "リピート提案がうまくいった"],
+  goodPractice: ["ヒアリングを丁寧に行い要望を具体的に把握した", "商品の強み・特徴を具体例を交えて説明した", "お客様の反応を見ながら提案内容を調整した"],
+};
+
+function JunbanFieldRow({ label, busy, value, onChange, rows, placeholder, onGenerate, onClear, presets }) {
+  const [showPicker, setShowPicker] = React.useState(false);
+  const handleAiClick = () => {
+    if (!value?.trim() && presets && presets.length) {
+      setShowPicker(v => !v);
+    } else {
+      onGenerate();
+    }
+  };
+  const pick = (hint) => {
+    setShowPicker(false);
+    onGenerate(hint);
+  };
   return (
     <div style={{ marginBottom: 8 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
@@ -1775,12 +1795,26 @@ function JunbanFieldRow({ label, busy, value, onChange, rows, placeholder, onGen
             style={{ background: "none", border: "1px solid #e8d0d0", borderRadius: 4, padding: "2px 8px", fontSize: 9, color: "#c47", cursor: "pointer", lineHeight: 1.6 }}>
             ✕ クリア
           </button>}
-          <button onClick={onGenerate} disabled={busy}
+          <button onClick={handleAiClick} disabled={busy}
             style={{ background: "none", border: "1px solid #d0daea", borderRadius: 4, padding: "2px 8px", fontSize: 9, color: busy ? "#ccc" : "#4c7ab5", cursor: busy ? "default" : "pointer", display: "flex", alignItems: "center", gap: 3, lineHeight: 1.6 }}>
             {busy ? <JunbanSpinner /> : "✦"} AI
           </button>
         </div>
       </div>
+      {showPicker && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6, padding: 8, background: "#f7faff", borderRadius: 8, border: "1px solid #e3ecf7" }}>
+          {presets.map(p => (
+            <button key={p} onClick={() => pick(p)}
+              style={{ background: "#fff", border: "1px solid #d0daea", borderRadius: 12, padding: "4px 10px", fontSize: 10.5, color: "#345", cursor: "pointer" }}>
+              {p}
+            </button>
+          ))}
+          <button onClick={() => pick()}
+            style={{ background: "none", border: "1px dashed #bbb", borderRadius: 12, padding: "4px 10px", fontSize: 10.5, color: "#999", cursor: "pointer" }}>
+            スキップしてAI生成
+          </button>
+        </div>
+      )}
       <textarea value={value} rows={rows} onChange={onChange} placeholder={placeholder}
         style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "10px 12px", fontSize: 16, outline: "none", resize: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", lineHeight: 1.6 }} />
     </div>
@@ -1939,24 +1973,25 @@ function JunbanView() {
     return (data.content?.[0]?.text || "").trim();
   };
 
-  const generateField = async (genKey, label, achieved, currentText, field, onDone, failReasonText, mainTopic, numCtx) => {
+  const generateField = async (genKey, label, achieved, currentText, field, onDone, failReasonText, mainTopic, numCtx, hint) => {
     if (!apiKey) { setShowApiKey(true); setApiKeyInput(""); return; }
     setFieldGen(s => ({ ...s, [genKey]: true }));
     const achievedLabel = achieved === true ? "達成" : achieved === false ? "未達" : "未判定";
     const memo = currentText?.trim() ? `\n参考メモ: ${currentText.trim()}` : "";
     const numRef = numCtx?.trim() ? `\n${numCtx.trim()}。目標値と実績値の数値を文中に明記し、「〜することで、目標値◯に対し実績値◯を達成し（または未達となり）、〜」の形式で記述すること` : "";
+    const topicSrc = hint?.trim() || mainTopic?.trim();
+    const topicRef = topicSrc ? `\n方向性: ${topicSrc}（この内容を軸に記述すること）` : "";
     let prompt;
     const shopContext = "当店は新規客が中心でリピート客は稀なため、リピート向上・再来店促進に関する内容は含めないこと。「顧客」は購入履歴のあるリピーターのお客様を指す（新規客とは区別する）。当店は心斎橋PARCO2階のテナント型店舗であり、路面店ではない（路面店を前提とした表現は使わないこと）。ただしこれは背景情報であり、「心斎橋PARCO2階」という固有名詞自体を本文中で繰り返し書かないこと。新規客へのアプローチとしてPOP設置は行えない（MYKITA店舗の規定のため）ので提案に含めないこと。既存客（顧客）へのアプローチ手段は電話・メール・DMに限られるため、それ以外の手段は提案に含めないこと。当店はエスカレーターエリアから視認できる好立地にあるため、未達理由として「認知不足」「認知度不足」等の立地・認知を理由にした言い訳は使わないこと。未達理由は他責にせず常に自責として記述すること。シーズンオフによる客足減少・天候・景気など外部要因のせいにする表現は使わず、自身の行動・工夫の観点から反省点と改善点を記述すること。抽象的な一般論ではなく、具体的な場面・接客での伝え方のどこが不十分だったかを自身の行動に即して記述すること。改善策は「〜していきます」「〜を意識して取り組みます」のように次に取るべき具体的な行動を宣言する形で記述すること。";
     if (field === "failReason") {
-      const topicRef = mainTopic?.trim() ? `\nメイントピック: ${mainTopic.trim()}（この内容を軸に記述すること）` : "";
       prompt = `あなたは小売店スタッフです。以下のKPI項目について「未達理由と反省点」を60〜100字で記述してください。スタッフ目線で具体的に。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 未達${topicRef}${memo}${numRef}`;
     } else if (field === "improvement") {
       const failRef = failReasonText?.trim() ? `\n未達理由と反省点: ${failReasonText.trim()}` : "";
-      prompt = `あなたは小売店スタッフです。以下のKPI項目について「改善策と次週の取り組み」を60〜100字で記述してください。未達理由と反省点の内容を踏まえた具体的な行動ベースで記述すること。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: ${achievedLabel}${failRef}${memo}`;
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「改善策と次週の取り組み」を60〜100字で記述してください。未達理由と反省点の内容を踏まえた具体的な行動ベースで記述すること。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: ${achievedLabel}${failRef}${memo}${topicRef}`;
     } else if (field === "achieveReason") {
-      prompt = `あなたは小売店スタッフです。以下のKPI項目について「達成できた理由」を60〜100字で記述してください。取り組みや要因を具体的に。呼び込み・チラシ配布・SNS運用は行っていないため含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}${numRef}`;
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「達成できた理由」を60〜100字で記述してください。取り組みや要因を具体的に。呼び込み・チラシ配布・SNS運用は行っていないため含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}${numRef}${topicRef}`;
     } else if (field === "goodPractice") {
-      prompt = `あなたは小売店スタッフです。以下のKPI項目で「実施したグッドプラクティス」（次週以降に活かせる良い取り組み）を60〜100字で記述してください。呼び込み・チラシ配布・SNS運用は行っていないため含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}`;
+      prompt = `あなたは小売店スタッフです。以下のKPI項目で「実施したグッドプラクティス」（次週以降に活かせる良い取り組み）を60〜100字で記述してください。呼び込み・チラシ配布・SNS運用は行っていないため含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}${topicRef}`;
     }
     try {
       const text = await callClaude(prompt);
@@ -2092,29 +2127,29 @@ function JunbanView() {
             {item.achieved === false && (
               <React.Fragment>
                 <JunbanFieldRow label="未達理由と反省点" busy={fieldGen[`${item.uid}-failReason`]}
-                  value={item.failReason} rows={3} placeholder="未達の要因・反省点など"
+                  value={item.failReason} rows={3} placeholder="未達の要因・反省点など" presets={FIELD_PRESETS.failReason}
                   onChange={e => updateDyn(item.uid, { failReason: e.target.value })}
                   onClear={() => updateDyn(item.uid, { failReason: "" })}
-                  onGenerate={() => generateField(`${item.uid}-failReason`, item.label || "KPI項目", item.achieved, item.failReason, "failReason", txt => updateDyn(item.uid, { failReason: txt }), null, item.mainTopic)} />
+                  onGenerate={(hint) => generateField(`${item.uid}-failReason`, item.label || "KPI項目", item.achieved, item.failReason, "failReason", txt => updateDyn(item.uid, { failReason: txt }), null, item.mainTopic, null, hint)} />
                 <JunbanFieldRow label="改善策と次週の取り組み" busy={fieldGen[`${item.uid}-improvement`]}
-                  value={item.improvement} rows={3} placeholder="具体的な行動・次週に向けての取り組みなど"
+                  value={item.improvement} rows={3} placeholder="具体的な行動・次週に向けての取り組みなど" presets={FIELD_PRESETS.improvement}
                   onChange={e => updateDyn(item.uid, { improvement: e.target.value })}
                   onClear={() => updateDyn(item.uid, { improvement: "" })}
-                  onGenerate={() => generateField(`${item.uid}-improvement`, item.label || "KPI項目", item.achieved, item.improvement, "improvement", txt => updateDyn(item.uid, { improvement: txt }), item.failReason)} />
+                  onGenerate={(hint) => generateField(`${item.uid}-improvement`, item.label || "KPI項目", item.achieved, item.improvement, "improvement", txt => updateDyn(item.uid, { improvement: txt }), item.failReason, null, null, hint)} />
               </React.Fragment>
             )}
             {item.achieved === true && (
               <React.Fragment>
                 <JunbanFieldRow label="達成理由" busy={fieldGen[`${item.uid}-achieveReason`]}
-                  value={item.achieveReason} rows={3} placeholder="達成できた取り組み・要因など"
+                  value={item.achieveReason} rows={3} placeholder="達成できた取り組み・要因など" presets={FIELD_PRESETS.achieveReason}
                   onChange={e => updateDyn(item.uid, { achieveReason: e.target.value })}
                   onClear={() => updateDyn(item.uid, { achieveReason: "" })}
-                  onGenerate={() => generateField(`${item.uid}-achieveReason`, item.label || "KPI項目", item.achieved, item.achieveReason, "achieveReason", txt => updateDyn(item.uid, { achieveReason: txt }))} />
+                  onGenerate={(hint) => generateField(`${item.uid}-achieveReason`, item.label || "KPI項目", item.achieved, item.achieveReason, "achieveReason", txt => updateDyn(item.uid, { achieveReason: txt }), null, null, null, hint)} />
                 <JunbanFieldRow label="実施したグッドプラクティス" busy={fieldGen[`${item.uid}-goodPractice`]}
-                  value={item.goodPractice} rows={3} placeholder="次週以降に活かせる良い取り組みなど"
+                  value={item.goodPractice} rows={3} placeholder="次週以降に活かせる良い取り組みなど" presets={FIELD_PRESETS.goodPractice}
                   onChange={e => updateDyn(item.uid, { goodPractice: e.target.value })}
                   onClear={() => updateDyn(item.uid, { goodPractice: "" })}
-                  onGenerate={() => generateField(`${item.uid}-goodPractice`, item.label || "KPI項目", item.achieved, item.goodPractice, "goodPractice", txt => updateDyn(item.uid, { goodPractice: txt }))} />
+                  onGenerate={(hint) => generateField(`${item.uid}-goodPractice`, item.label || "KPI項目", item.achieved, item.goodPractice, "goodPractice", txt => updateDyn(item.uid, { goodPractice: txt }), null, null, null, hint)} />
               </React.Fragment>
             )}
           </div>
@@ -2185,29 +2220,29 @@ function JunbanView() {
               {pAchieved === false && (
                 <React.Fragment>
                   <JunbanFieldRow label="未達理由と反省点" busy={fieldGen["personal-failReason"]}
-                    value={personal.failReason} rows={3} placeholder="目標への取り組み・達成できなかった要因など"
+                    value={personal.failReason} rows={3} placeholder="目標への取り組み・達成できなかった要因など" presets={FIELD_PRESETS.failReason}
                     onChange={e => updatePersonal({ failReason: e.target.value })}
                     onClear={() => updatePersonal({ failReason: "" })}
-                    onGenerate={() => generateField("personal-failReason", pLabel, pAchieved, personal.failReason, "failReason", txt => updatePersonal({ failReason: txt }), null, null, pNumCtx)} />
+                    onGenerate={(hint) => generateField("personal-failReason", pLabel, pAchieved, personal.failReason, "failReason", txt => updatePersonal({ failReason: txt }), null, null, pNumCtx, hint)} />
                   <JunbanFieldRow label="改善策と次週の取り組み" busy={fieldGen["personal-improvement"]}
-                    value={personal.improvement} rows={3} placeholder="次週に向けての具体的な取り組みなど"
+                    value={personal.improvement} rows={3} placeholder="次週に向けての具体的な取り組みなど" presets={FIELD_PRESETS.improvement}
                     onChange={e => updatePersonal({ improvement: e.target.value })}
                     onClear={() => updatePersonal({ improvement: "" })}
-                    onGenerate={() => generateField("personal-improvement", pLabel, pAchieved, personal.improvement, "improvement", txt => updatePersonal({ improvement: txt }), personal.failReason)} />
+                    onGenerate={(hint) => generateField("personal-improvement", pLabel, pAchieved, personal.improvement, "improvement", txt => updatePersonal({ improvement: txt }), personal.failReason, null, null, hint)} />
                 </React.Fragment>
               )}
               {pAchieved === true && (
                 <React.Fragment>
                   <JunbanFieldRow label="達成理由" busy={fieldGen["personal-achieveReason"]}
-                    value={personal.achieveReason} rows={3} placeholder="達成できた取り組み・要因など"
+                    value={personal.achieveReason} rows={3} placeholder="達成できた取り組み・要因など" presets={FIELD_PRESETS.achieveReason}
                     onChange={e => updatePersonal({ achieveReason: e.target.value })}
                     onClear={() => updatePersonal({ achieveReason: "" })}
-                    onGenerate={() => generateField("personal-achieveReason", pLabel, pAchieved, personal.achieveReason, "achieveReason", txt => updatePersonal({ achieveReason: txt }), null, null, pNumCtx)} />
+                    onGenerate={(hint) => generateField("personal-achieveReason", pLabel, pAchieved, personal.achieveReason, "achieveReason", txt => updatePersonal({ achieveReason: txt }), null, null, pNumCtx, hint)} />
                   <JunbanFieldRow label="実施したグッドプラクティス" busy={fieldGen["personal-goodPractice"]}
-                    value={personal.goodPractice} rows={3} placeholder="次週以降に活かせる良い取り組みなど"
+                    value={personal.goodPractice} rows={3} placeholder="次週以降に活かせる良い取り組みなど" presets={FIELD_PRESETS.goodPractice}
                     onChange={e => updatePersonal({ goodPractice: e.target.value })}
                     onClear={() => updatePersonal({ goodPractice: "" })}
-                    onGenerate={() => generateField("personal-goodPractice", pLabel, pAchieved, personal.goodPractice, "goodPractice", txt => updatePersonal({ goodPractice: txt }))} />
+                    onGenerate={(hint) => generateField("personal-goodPractice", pLabel, pAchieved, personal.goodPractice, "goodPractice", txt => updatePersonal({ goodPractice: txt }), null, null, null, hint)} />
                 </React.Fragment>
               )}
             </div>
