@@ -1676,9 +1676,9 @@ const JUNBAN_KPI_OPTIONS = [
 ];
 
 function mkDynItem() { return { uid: Math.random().toString(36).slice(2,7), label: "", mainTopic: "", achieved: null, failReason: "", improvement: "", achieveReason: "", goodPractice: "" }; }
-function mkPersonal() { return { achieved: null, goalText: "", targetValue: "", actualValue: "", failReason: "", improvement: "", achieveReason: "", goodPractice: "" }; }
+function mkPersonal() { return { achieved: null, goalText: "", targetValue: "", actualValue: "", detailNote: "", failReason: "", improvement: "", achieveReason: "", goodPractice: "" }; }
 function migrateItem(it) {
-  return { goalText: "", targetValue: "", actualValue: "", mainTopic: it.mainTopic ?? "", failReason: it.failReason ?? it.reflection ?? "", improvement: it.improvement ?? "", achieveReason: it.achieveReason ?? "", goodPractice: it.goodPractice ?? "", ...it };
+  return { goalText: "", targetValue: "", actualValue: "", detailNote: it.detailNote ?? "", mainTopic: it.mainTopic ?? "", failReason: it.failReason ?? it.reflection ?? "", improvement: it.improvement ?? "", achieveReason: it.achieveReason ?? "", goodPractice: it.goodPractice ?? "", ...it };
 }
 
 const DEFAULT_JUNBAN_PROMPT = `あなたは小売店舗スタッフの週次KPI報告（週報）作成を補助するアシスタントです。
@@ -1692,13 +1692,15 @@ const DEFAULT_JUNBAN_PROMPT = `あなたは小売店舗スタッフの週次KPI�
 （複数項目ある場合は繰り返す）
 
 個人目標の達成・未達
-・取り組みと成果・課題を1文で簡潔に
+個人目標：（目標内容）→ 目標（目標値）/実績（実績値）（補足情報があれば続けて記載）
+・目標値に対し実績値を達成（または未達）した旨を明記し、取り組みと成果・課題を1文で簡潔に
 
 ルール：
 - です・ます調の丁寧な報告体
 - 各項目は「・」で始める箇条書きとし、1項目1文で簡潔に記述
 - 冗長な前置き・重複表現を避け、要点のみを記述
 - 提供されたメモを基に具体的かつ前向きに記述
+- 個人目標の実績文は「〜することで、目標値◯に対し実績値◯を達成し、〜」のように具体的な取り組みと数値を関連付けて記述すること
 - 未達項目がない場合はその見出しは省略
 - 当店は新規客が中心でリピート客は稀なため、リピート向上・再来店促進に関する内容は含めないこと
 - 「顧客」は購入履歴のあるリピーターのお客様を指す（新規客とは区別する）
@@ -1935,21 +1937,22 @@ function JunbanView() {
     return (data.content?.[0]?.text || "").trim();
   };
 
-  const generateField = async (genKey, label, achieved, currentText, field, onDone, failReasonText, mainTopic) => {
+  const generateField = async (genKey, label, achieved, currentText, field, onDone, failReasonText, mainTopic, numCtx) => {
     if (!apiKey) { setShowApiKey(true); setApiKeyInput(""); return; }
     setFieldGen(s => ({ ...s, [genKey]: true }));
     const achievedLabel = achieved === true ? "達成" : achieved === false ? "未達" : "未判定";
     const memo = currentText?.trim() ? `\n参考メモ: ${currentText.trim()}` : "";
+    const numRef = numCtx?.trim() ? `\n${numCtx.trim()}。目標値と実績値の数値を文中に明記し、「〜することで、目標値◯に対し実績値◯を達成し（または未達となり）、〜」の形式で記述すること` : "";
     let prompt;
     const shopContext = "当店は新規客が中心でリピート客は稀なため、リピート向上・再来店促進に関する内容は含めないこと。「顧客」は購入履歴のあるリピーターのお客様を指す（新規客とは区別する）。当店は心斎橋PARCO2階のテナント型店舗であり、路面店ではない（路面店を前提とした表現は使わないこと）。ただしこれは背景情報であり、「心斎橋PARCO2階」という固有名詞自体を本文中で繰り返し書かないこと。新規客へのアプローチとしてPOP設置は行えない（MYKITA店舗の規定のため）ので提案に含めないこと。既存客（顧客）へのアプローチ手段は電話・メール・DMに限られるため、それ以外の手段は提案に含めないこと。当店はエスカレーターエリアから視認できる好立地にあるため、未達理由として「認知不足」「認知度不足」等の立地・認知を理由にした言い訳は使わないこと。未達理由は他責にせず常に自責として記述すること。シーズンオフによる客足減少・天候・景気など外部要因のせいにする表現は使わず、自身の行動・工夫の観点から反省点と改善点を記述すること。";
     if (field === "failReason") {
       const topicRef = mainTopic?.trim() ? `\nメイントピック: ${mainTopic.trim()}（この内容を軸に記述すること）` : "";
-      prompt = `あなたは小売店スタッフです。以下のKPI項目について「未達理由と反省点」を60〜100字で記述してください。スタッフ目線で具体的に。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 未達${topicRef}${memo}`;
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「未達理由と反省点」を60〜100字で記述してください。スタッフ目線で具体的に。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 未達${topicRef}${memo}${numRef}`;
     } else if (field === "improvement") {
       const failRef = failReasonText?.trim() ? `\n未達理由と反省点: ${failReasonText.trim()}` : "";
       prompt = `あなたは小売店スタッフです。以下のKPI項目について「改善策と次週の取り組み」を60〜100字で記述してください。未達理由と反省点の内容を踏まえた具体的な行動ベースで記述すること。呼び込み・チラシ配布・SNS運用は行っていないため提案に含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: ${achievedLabel}${failRef}${memo}`;
     } else if (field === "achieveReason") {
-      prompt = `あなたは小売店スタッフです。以下のKPI項目について「達成できた理由」を60〜100字で記述してください。取り組みや要因を具体的に。呼び込み・チラシ配布・SNS運用は行っていないため含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}`;
+      prompt = `あなたは小売店スタッフです。以下のKPI項目について「達成できた理由」を60〜100字で記述してください。取り組みや要因を具体的に。呼び込み・チラシ配布・SNS運用は行っていないため含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}${numRef}`;
     } else if (field === "goodPractice") {
       prompt = `あなたは小売店スタッフです。以下のKPI項目で「実施したグッドプラクティス」（次週以降に活かせる良い取り組み）を60〜100字で記述してください。呼び込み・チラシ配布・SNS運用は行っていないため含めないこと。${shopContext}本文のみ出力。\n\nKPI: ${label}\n状況: 達成${memo}`;
     }
@@ -1989,7 +1992,8 @@ function JunbanView() {
     const ps = pAchieved === true ? "達成" : pAchieved === false ? "未達" : "未入力";
     const psGoal = personal.goalText?.trim() ? ` 目標:${personal.goalText.trim()}` : "";
     const psNum = hasNumP ? ` 目標値:${personal.targetValue} 実績値:${personal.actualValue}` : "";
-    parts.push(`▼ 個人目標（${ps}）${psGoal}${psNum}`);
+    const psDetail = personal.detailNote?.trim() ? ` 補足:${personal.detailNote.trim()}` : "";
+    parts.push(`▼ 個人目標（${ps}）${psGoal}${psNum}${psDetail}`);
     if (pAchieved === false) {
       if (personal.failReason?.trim())  parts.push(`未達理由と反省点: ${personal.failReason.trim()}`);
       if (personal.improvement?.trim()) parts.push(`改善策と次週の取り組み: ${personal.improvement.trim()}`);
@@ -2126,6 +2130,9 @@ function JunbanView() {
           const hasNum = personal.targetValue !== "" && personal.actualValue !== "" && !isNaN(Number(personal.targetValue)) && !isNaN(Number(personal.actualValue));
           const pAchieved = hasNum ? Number(personal.actualValue) >= Number(personal.targetValue) : personal.achieved;
           const pLabel = personal.goalText?.trim() ? `個人目標（${personal.goalText.trim()}）` : "個人目標";
+          const pNumCtx = hasNum
+            ? `目標値: ${personal.targetValue}\n実績値: ${personal.actualValue}${personal.detailNote?.trim() ? `\n補足: ${personal.detailNote.trim()}` : ""}`
+            : "";
           return (
             <div style={{ marginBottom: 28 }}>
               <SL label="個人目標" />
@@ -2154,6 +2161,12 @@ function JunbanView() {
                 </div>
               </div>
 
+              {/* 補足（内訳・付随する実績など） */}
+              <input type="text" value={personal.detailNote}
+                onChange={e => updatePersonal({ detailNote: e.target.value })}
+                placeholder="補足（任意）例: (内、レンズ販売1)、検眼室案内1件"
+                style={{ width: "100%", border: "1px solid #e0e0e0", borderRadius: 8, padding: "9px 12px", fontSize: 12, outline: "none", boxSizing: "border-box", fontFamily: "inherit", color: "#111", marginBottom: 10 }} />
+
               {/* 達成/未達: 数値あり→自動判定、数値なし→手動 */}
               {hasNum ? (
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 10, padding: "9px 12px", borderRadius: 8, background: pAchieved ? "#edf8f2" : "#fef0f0", border: `1px solid ${pAchieved ? "#b2dfca" : "#f5c6c6"}` }}>
@@ -2173,7 +2186,7 @@ function JunbanView() {
                     value={personal.failReason} rows={3} placeholder="目標への取り組み・達成できなかった要因など"
                     onChange={e => updatePersonal({ failReason: e.target.value })}
                     onClear={() => updatePersonal({ failReason: "" })}
-                    onGenerate={() => generateField("personal-failReason", pLabel, pAchieved, personal.failReason, "failReason", txt => updatePersonal({ failReason: txt }))} />
+                    onGenerate={() => generateField("personal-failReason", pLabel, pAchieved, personal.failReason, "failReason", txt => updatePersonal({ failReason: txt }), null, null, pNumCtx)} />
                   <JunbanFieldRow label="改善策と次週の取り組み" busy={fieldGen["personal-improvement"]}
                     value={personal.improvement} rows={3} placeholder="次週に向けての具体的な取り組みなど"
                     onChange={e => updatePersonal({ improvement: e.target.value })}
@@ -2187,7 +2200,7 @@ function JunbanView() {
                     value={personal.achieveReason} rows={3} placeholder="達成できた取り組み・要因など"
                     onChange={e => updatePersonal({ achieveReason: e.target.value })}
                     onClear={() => updatePersonal({ achieveReason: "" })}
-                    onGenerate={() => generateField("personal-achieveReason", pLabel, pAchieved, personal.achieveReason, "achieveReason", txt => updatePersonal({ achieveReason: txt }))} />
+                    onGenerate={() => generateField("personal-achieveReason", pLabel, pAchieved, personal.achieveReason, "achieveReason", txt => updatePersonal({ achieveReason: txt }), null, null, pNumCtx)} />
                   <JunbanFieldRow label="実施したグッドプラクティス" busy={fieldGen["personal-goodPractice"]}
                     value={personal.goodPractice} rows={3} placeholder="次週以降に活かせる良い取り組みなど"
                     onChange={e => updatePersonal({ goodPractice: e.target.value })}
