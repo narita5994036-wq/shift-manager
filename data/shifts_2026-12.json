@@ -1,0 +1,878 @@
+{
+  "正田": {
+    "2026-12-01": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-02": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-03": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-04": {
+      "status": "出勤",
+      "startTime": "10:00",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": "週次会議11:00~"
+    },
+    "2026-12-05": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-06": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-07": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-08": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-09": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-10": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-11": {
+      "status": "出勤",
+      "startTime": "10:00",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": "週次会議11:00~ / LIDIAMTG18:00~"
+    },
+    "2026-12-12": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-13": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-14": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-15": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-16": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-17": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-18": {
+      "status": "出勤",
+      "startTime": "10:00",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~ / 正田+30min"
+    },
+    "2026-12-19": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-20": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-21": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-22": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-23": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-24": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-25": {
+      "status": "出勤",
+      "startTime": "10:00",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~ / 正田＋30min / LIDIAMTG18:00~"
+    },
+    "2026-12-26": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-27": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-28": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-29": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-30": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-31": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    }
+  },
+  "尾谷": {
+    "2026-12-01": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": "有給休暇"
+    },
+    "2026-12-02": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": "有給休暇"
+    },
+    "2026-12-03": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-04": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-05": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-06": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-07": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-08": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-09": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-10": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-11": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-12": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-13": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-14": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-15": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-16": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-17": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-18": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-19": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-20": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-21": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-22": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-23": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-24": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": "尾谷+30min"
+    },
+    "2026-12-25": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-26": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-27": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-28": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-29": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": "尾谷+30min"
+    },
+    "2026-12-30": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-31": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    }
+  },
+  "成田": {
+    "2026-12-01": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-02": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-03": {
+      "status": "出勤",
+      "startTime": "11:00",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-04": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~"
+    },
+    "2026-12-05": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-06": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-07": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-08": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-09": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-10": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-11": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~ / LIDIAMTG18:00~"
+    },
+    "2026-12-12": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-13": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-14": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-15": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-16": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-17": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-18": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~"
+    },
+    "2026-12-19": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-20": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-21": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-22": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-23": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-24": {
+      "status": "出勤",
+      "startTime": "10:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": "成田+30min"
+    },
+    "2026-12-25": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~ / LIDIAMTG18:00~"
+    },
+    "2026-12-26": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-27": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-28": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-29": {
+      "status": "出勤",
+      "startTime": "10:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": "成田+30min"
+    },
+    "2026-12-30": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-31": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    }
+  },
+  "中谷": {
+    "2026-12-01": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:00",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-02": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-03": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-04": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~"
+    },
+    "2026-12-05": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-06": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-07": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-08": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": "平谷+30min"
+    },
+    "2026-12-09": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-10": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-11": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~ / LIDIAMTG18:00~"
+    },
+    "2026-12-12": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-13": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-14": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-15": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-16": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "19:30",
+      "breakTime": 60,
+      "memo": "平谷+30min"
+    },
+    "2026-12-17": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-18": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~"
+    },
+    "2026-12-19": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-20": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-21": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-22": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-23": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-24": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-25": {
+      "status": "出勤",
+      "startTime": "09:30",
+      "endTime": "18:30",
+      "breakTime": 60,
+      "memo": "週次会議11:00~ / LIDIAMTG18:00~"
+    },
+    "2026-12-26": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-27": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-28": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-29": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-30": {
+      "status": "出勤",
+      "startTime": "11:30",
+      "endTime": "20:30",
+      "breakTime": 60,
+      "memo": ""
+    },
+    "2026-12-31": {
+      "status": "休日",
+      "startTime": "",
+      "endTime": "",
+      "breakTime": 60,
+      "memo": ""
+    }
+  }
+}
